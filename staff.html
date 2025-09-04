@@ -9,13 +9,24 @@
     <div class="container staff-page">
         <header>
             <h1>Staff Control Panel</h1>
+            <button id="shuffle-btn" class="shuffle-button">สุ่มโต๊ะใหม่ (Shuffle)</button>
         </header>
+
+        <div id="timeslot-dashboard-container" class="dashboard-container">
+            <div class="dashboard-header">
+                <h2>ตารางสรุปสถานะโต๊ะตามรอบเวลา</h2>
+                <select id="date-filter"></select>
+            </div>
+            <div id="timeslot-dashboard"></div>
+        </div>
+
+        <hr class="divider">
 
         <div class="controls">
             <input type="text" id="search-box" placeholder="ค้นหาด้วยชื่อ, ชื่อเล่น, คณะ...">
             <select id="filter-slot">
                 <option value="all">ทุกรอบเวลา</option>
-                </select>
+            </select>
             <select id="filter-status">
                 <option value="all">ทุกสถานะ</option>
                 <option value="Pending">รอเช็กอิน</option>
@@ -37,6 +48,13 @@
                 </div>
                 <div id="arrived-list" class="applicant-list"></div>
             </div>
+        </div>
+    </div>
+
+    <div id="staff-info-modal" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <button class="modal-close-btn">&times;</button>
+            <div id="staff-modal-body"></div>
         </div>
     </div>
     

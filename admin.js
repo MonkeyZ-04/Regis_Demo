@@ -18,8 +18,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             columns[`table-${i}`] = [];
         }
         allData.forEach(item => {
-            if (columns[`table-${item.table_number}`]) {
-                columns[`table-${item.table_number}`].push(item);
+            if (columns[`table-${item.table}`]) {
+                columns[`table-${item.table}`].push(item);
             }
         });
 
@@ -75,6 +75,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 plugins: {
                     legend: {
                         display: false
+                    },
+                    title: {
+                        display: true,
+                        text: 'สรุปคะแนนรวมผู้สมัคร (เรียงจากมากไปน้อย)'
                     }
                 }
             }

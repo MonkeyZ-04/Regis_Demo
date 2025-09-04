@@ -224,3 +224,96 @@ button:hover { background-color: #f0f0f0; }
     background-color: #ffc107;
     color: #333;
 }
+/* --- Add/Replace these styles for the NEW Timeslot Dashboard --- */
+
+.dashboard-container {
+    margin-bottom: 20px;
+}
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+.dashboard-header h2 {
+    margin: 0;
+}
+#timeslot-dashboard {
+    width: 100%;
+    overflow-x: auto; /* Allow horizontal scroll */
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+#timeslot-dashboard table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    white-space: nowrap; /* Prevent text wrapping in cells */
+}
+#timeslot-dashboard th, #timeslot-dashboard td {
+    padding: 10px 15px;
+    text-align: center;
+    border: 1px solid #e0e0e0;
+}
+#timeslot-dashboard th {
+    background-color: #f8f9fa;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+#timeslot-dashboard td:first-child, #timeslot-dashboard th:first-child {
+    position: sticky;
+    left: 0;
+    background-color: #f8f9fa;
+    z-index: 11;
+    text-align: left;
+}
+#timeslot-dashboard td.available {
+    color: #b0b0b0;
+    font-style: italic;
+    background-color: #fdfdfd;
+}
+#timeslot-dashboard td.busy {
+    font-weight: 500;
+    cursor: pointer;
+    background-color: #e9ecef;
+    transition: background-color 0.2s;
+}
+#timeslot-dashboard td.busy:hover {
+    background-color: #d0d6db;
+}
+/* New style for arrived applicants in the table */
+#timeslot-dashboard td.arrived-in-table {
+    background-color: #d4edda; /* Light green */
+    color: #155724;
+    font-weight: bold;
+}
+#timeslot-dashboard th.current-slot-header {
+    background-color: #fffbe6; /* Light yellow */
+    color: #856404;
+}
+
+.divider {
+    border: none;
+    border-top: 2px dashed #ccc;
+    margin: 30px 0;
+}
+
+/* --- Add these styles for the new Info Modal --- */
+#staff-info-modal .modal-content {
+    max-width: 450px;
+}
+#staff-modal-body h2 {
+    margin-top: 0;
+    color: #007bff;
+}
+#staff-modal-body p {
+    margin: 12px 0;
+    font-size: 16px;
+    line-height: 1.6;
+}
+#staff-modal-body strong {
+    color: #333;
+    display: inline-block;
+    width: 140px;
+}
