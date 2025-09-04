@@ -317,3 +317,46 @@ button:hover { background-color: #f0f0f0; }
     display: inline-block;
     width: 140px;
 }
+/* --- Add these styles to your existing style.css --- */
+
+.staff-card .card-actions {
+    min-width: 200px; /* ให้พื้นที่กับ dropdown เพียงพอ */
+}
+
+.card-actions .action-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%; /* ทำให้ dropdown กว้างเต็มพื้นที่ */
+}
+
+.card-actions .action-item.full-width {
+    justify-content: flex-end;
+}
+
+.card-actions .action-item label {
+    font-size: 12px;
+    color: #666;
+    width: 40px; /* กำหนดความกว้างของ label */
+}
+
+.card-actions .action-item select {
+    flex-grow: 1; /* ทำให้ select ขยายเต็มพื้นที่ที่เหลือ */
+    width: 100%;
+}
+
+/* Style for shuffle and clear cache buttons */
+header div {
+    display: flex;
+    gap: 10px;
+}
+.shuffle-button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+}
+.clear-cache-button {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+}
