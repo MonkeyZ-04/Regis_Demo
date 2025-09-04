@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>Staff Check-in & Management</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container staff-page">
+        <header>
+            <h1>Staff Control Panel</h1>
+        </header>
+
+        <div class="controls">
+            <input type="text" id="search-box" placeholder="ค้นหาด้วยชื่อ, ชื่อเล่น, คณะ...">
+            <select id="filter-slot">
+                <option value="all">ทุกรอบเวลา</option>
+                </select>
+            <select id="filter-status">
+                <option value="all">ทุกสถานะ</option>
+                <option value="Pending">รอเช็กอิน</option>
+                <option value="Arrived">มาถึงแล้ว</option>
+            </select>
+        </div>
+
+        <div class="staff-board">
+            <div class="board-column">
+                <div class="column-header pending-header">
+                    <h2>รอเช็กอิน (<span id="pending-count">0</span>)</h2>
+                </div>
+                <div id="pending-list" class="applicant-list"></div>
+            </div>
+
+            <div class="board-column">
+                <div class="column-header arrived-header">
+                    <h2>มาถึงแล้ว (<span id="arrived-count">0</span>)</h2>
+                </div>
+                <div id="arrived-list" class="applicant-list"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="data.js"></script>
+    <script src="staff.js"></script>
+</body>
+</html>

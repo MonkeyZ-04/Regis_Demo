@@ -1,0 +1,226 @@
+/* General */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: #f0f2f5;
+    color: #333;
+    margin: 0;
+    padding: 20px;
+}
+.container {
+    background-color: white;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 0 auto;
+    max-width: 1200px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+}
+h1 { margin: 0; font-size: 24px; }
+button, select {
+    padding: 8px 12px;
+    font-size: 14px;
+    border-radius: 5px;
+    cursor: pointer;
+    border: 1px solid #ccc;
+}
+button:hover { background-color: #f0f0f0; }
+.hidden { display: none !important; }
+
+/* Views */
+.view { padding: 10px; }
+.selection-box { text-align: center; padding: 50px; }
+.selection-box select { margin: 0 10px; }
+
+/* Cards */
+.applicant-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+.info-card, .applicant-card {
+    background-color: white;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border-left: 5px solid #6c757d; /* pending */
+    transition: transform 0.2s;
+}
+.info-card:hover { transform: translateY(-3px); }
+.info-card.arrived, .applicant-card.arrived { border-left-color: #28a745; }
+.info-card h3 { margin: 0 0 10px 0; }
+.info-card p { margin: 5px 0; }
+
+/* Status Badge */
+.status {
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
+    text-transform: uppercase;
+}
+.status.pending { background-color: #6c757d; }
+.status.arrived { background-color: #28a745; }
+
+/* Modal */
+.modal-backdrop {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.modal-content {
+    background-color: white;
+    padding: 30px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 600px;
+    position: relative;
+}
+.modal-close-btn {
+    position: absolute;
+    top: 10px; right: 10px;
+    border: none; background: none;
+    font-size: 24px; cursor: pointer;
+}
+.applicant-details p { margin: 8px 0; }
+#scoring-form .score-item { display: flex; align-items: center; margin-bottom: 10px; }
+#scoring-form label { width: 150px; }
+#scoring-form input, #scoring-form textarea {
+    flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px;
+}
+#scoring-form textarea { resize: vertical; min-height: 80px; }
+#scoring-form button { margin-top: 15px; }
+
+/* Staff Table */
+#staff-table { width: 100%; border-collapse: collapse; }
+#staff-table th, #staff-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+#staff-table th { background-color: #f8f9fa; }
+#staff-table .actions { display: flex; align-items: center; gap: 10px; }
+
+/* Admin Page */
+.kanban-board { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 10px; }
+.kanban-column { flex: 1 0 250px; min-width: 250px; background-color: #f4f5f7; border-radius: 8px; }
+.kanban-column h2 { padding: 15px; margin: 0; font-size: 16px; border-bottom: 1px solid #ddd; }
+.kanban-items { padding: 10px; min-height: 50px; }
+.applicant-card.small { padding: 10px; font-size: 14px; display: flex; justify-content: space-between; }
+.applicant-card.small .status { font-size: 10px; padding: 2px 6px; }
+.no-items { text-align: center; color: #999; padding: 10px; font-style: italic;}
+.chart-container { max-width: 800px; margin: 20px auto; }
+
+/* --- Add these styles to your existing style.css --- */
+
+/* Staff Page Specific */
+.staff-page .controls {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+}
+.staff-page .controls input,
+.staff-page .controls select {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+.staff-board {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+.board-column .column-header {
+    padding: 10px 15px;
+    border-radius: 8px 8px 0 0;
+    color: white;
+    margin-bottom: 10px;
+}
+.column-header.pending-header { background-color: #6c757d; }
+.column-header.arrived-header { background-color: #28a745; }
+.column-header h2 {
+    margin: 0;
+    font-size: 18px;
+}
+.applicant-list {
+    background-color: #f4f5f7;
+    border-radius: 0 0 8px 8px;
+    padding: 10px;
+    height: 65vh;
+    overflow-y: auto;
+}
+
+/* Staff Card */
+.staff-card {
+    background: white;
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-left: 5px solid #6c757d; /* pending */
+}
+.staff-card.arrived {
+    border-left-color: #28a745;
+}
+.staff-card h4 {
+    margin: 0 0 5px 0;
+    font-size: 16px;
+}
+.staff-card p {
+    margin: 0;
+    font-size: 14px;
+    color: #555;
+}
+.staff-card .interview-slot {
+    font-size: 12px;
+    color: #888;
+    margin-top: 5px;
+}
+.card-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-end;
+}
+.card-actions .action-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.card-actions label {
+    font-size: 12px;
+    color: #666;
+}
+.card-actions .check-in-btn, .card-actions .undo-check-in-btn {
+    width: 120px;
+    padding: 8px;
+    border: none;
+    color: white;
+    font-weight: bold;
+}
+.card-actions .check-in-btn {
+    background-color: #28a745;
+}
+.card-actions .undo-check-in-btn {
+    background-color: #ffc107;
+    color: #333;
+}

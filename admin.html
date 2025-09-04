@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header><h1>Admin Dashboard - ภาพรวม</h1></header>
+        
+        <h2>ภาพรวมแต่ละโต๊ะ</h2>
+        <div id="admin-overview" class="kanban-board"></div>
+
+        <hr>
+
+        <h2>สรุปคะแนนผู้สมัคร</h2>
+        <div class="chart-container">
+            <canvas id="score-chart"></canvas>
+        </div>
+    </div>
+    <script src="data.js"></script>
+    <script src="admin.js"></script>
+</body>
+</html>

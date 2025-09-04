@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>Interviewer Page</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app-container">
+        <div id="table-selection-view" class="view">
+            <div class="selection-box">
+                <h1>เลือกโต๊ะสัมภาษณ์ของคุณ</h1>
+                <select id="table-select">
+                    <option value="">-- กรุณาเลือกโต๊ะ --</option>
+                    <option value="1">โต๊ะ 1</option>
+                    <option value="2">โต๊ะ 2</option>
+                    <option value="3">โต๊ะ 3</option>
+                    <option value="4">โต๊ะ 4</option>
+                    <option value="5">โต๊ะ 5</option>
+                    <option value="6">โต๊ะ 6</option>
+                    <option value="7">โต๊ะ 7</option>
+                    <option value="8">โต๊ะ 8</option>
+                </select>
+                <button id="confirm-table-btn">ยืนยัน</button>
+            </div>
+        </div>
+
+        <div id="applicant-list-view" class="view hidden">
+            <header>
+                <h1 id="table-title"></h1>
+                <button id="back-to-selection-btn">กลับไปเลือกโต๊ะ</button>
+            </header>
+            <div id="applicant-cards-container" class="applicant-grid">
+                </div>
+        </div>
+
+        <div id="scoring-modal" class="modal-backdrop hidden">
+            <div class="modal-content">
+                <button class="modal-close-btn">&times;</button>
+                <div id="modal-body"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="data.js"></script>
+    <script src="interviewer.js"></script>
+</body>
+</html>
