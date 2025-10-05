@@ -28,10 +28,13 @@
         <div id="applicant-list-view" class="view hidden">
             <header>
                 <h1 id="table-title"></h1>
-                <button id="back-to-selection-btn">กลับไปเลือกโต๊ะ</button>
-            </header>
-            <div id="applicant-cards-container" class="applicant-grid">
+                <div class="header-controls">
+                    <select id="interview-date-filter"></select>
+                    <button id="back-to-selection-btn">กลับไปเลือกโต๊ะ</button>
                 </div>
+            </header>
+            <div id="applicant-cards-container">
+            </div>
         </div>
 
         <div id="scoring-modal" class="modal-backdrop hidden">

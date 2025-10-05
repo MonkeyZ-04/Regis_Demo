@@ -14,32 +14,97 @@ document.addEventListener('DOMContentLoaded', async () => {
     const cardsContainer = document.getElementById('applicant-cards-container');
     const scoringModal = document.getElementById('scoring-modal');
     const modalBody = document.getElementById('modal-body');
+    const interviewDateFilter = document.getElementById('interview-date-filter'); // Element ใหม่
 
     let currentTable = null;
+
+    function parseTimeFromSlot(slotString) {
+        if (!slotString) return 'ยังไม่ระบุเวลา';
+        const timeMatch = slotString.match(/(\d{2}[.:]\d{2})/);
+        return timeMatch ? timeMatch[1] : slotString;
+    }
+
+    function parseDateFromSlot(slotString) {
+        if (!slotString) return null;
+        const dateMatch = slotString.match(/วันที่ \d+ มีนาคม/);
+        return dateMatch ? dateMatch[0] : null;
+    }
+
+    // --- ฟังก์ชันใหม่สำหรับสร้างตัวเลือกวันที่ ---
+    function populateDateFilter() {
+        const allData = Database.getData();
+        const dates = [...new Set(allData.map(app => parseDateFromSlot(app.interviewSlot)))].filter(Boolean);
+        
+        interviewDateFilter.innerHTML = ''; // Clear existing options
+        dates.forEach(date => {
+            const option = document.createElement('option');
+            option.value = date;
+            option.textContent = date;
+            interviewDateFilter.appendChild(option);
+        });
+
+        // Trigger render for the first time
+        renderApplicantCards();
+    }
 
     function renderApplicantCards() {
         if (!currentTable) return;
         cardsContainer.innerHTML = '';
         const allData = Database.getData();
-        const applicantsForTable = allData.filter(app => app.table === currentTable);
+        const selectedDate = interviewDateFilter.value;
 
-        if (applicantsForTable.length === 0) {
-            cardsContainer.innerHTML = '<p>ยังไม่มีผู้สมัครสำหรับโต๊ะนี้</p>';
+        // กรองผู้สมัครตามโต๊ะและวันที่ที่เลือก
+        const applicantsForTableAndDate = allData.filter(app => 
+            app.table === currentTable && parseDateFromSlot(app.interviewSlot) === selectedDate
+        );
+
+        if (applicantsForTableAndDate.length === 0) {
+            cardsContainer.innerHTML = '<p>ยังไม่มีผู้สมัครสำหรับโต๊ะและวันที่นี้</p>';
             return;
         }
 
-        applicantsForTable.forEach(app => {
-            const card = document.createElement('div');
-            card.className = `info-card ${app.status.toLowerCase()}`;
-            card.dataset.applicantId = app.id;
-            card.innerHTML = `
-                <h3>${app.firstName} ${app.lastName} (${app.nickname})</h3>
-                <p><strong>สถานะ:</strong> ${app.status}</p>
-                <p><strong>คณะ:</strong> ${app.faculty}</p>
-                <p><strong>ชั้นปี:</strong> ${app.year}</p>
-                <button class="view-details-btn">ดูรายละเอียดและให้คะแนน</button>
-            `;
-            cardsContainer.appendChild(card);
+        // จัดกลุ่มผู้สมัครตามช่วงเวลา
+        const applicantsBySlot = applicantsForTableAndDate.reduce((acc, app) => {
+            const slot = app.interviewSlot || 'Unscheduled';
+            if (!acc[slot]) {
+                acc[slot] = [];
+            }
+            acc[slot].push(app);
+            return acc;
+        }, {});
+
+        // เรียงลำดับช่วงเวลา
+        const sortedSlots = Object.keys(applicantsBySlot).sort();
+
+        // แสดงผลแต่ละกลุ่มช่วงเวลา
+        sortedSlots.forEach(slot => {
+            const slotGroup = document.createElement('div');
+            slotGroup.className = 'timeslot-group';
+
+            const slotTitle = document.createElement('h3');
+            slotTitle.className = 'timeslot-header';
+            slotTitle.textContent = `รอบเวลา: ${parseTimeFromSlot(slot)}`;
+            slotGroup.appendChild(slotTitle);
+
+            const cardsGrid = document.createElement('div');
+            cardsGrid.className = 'applicant-grid';
+
+            applicantsBySlot[slot].forEach(app => {
+                const card = document.createElement('div');
+                card.className = `info-card ${app.status.toLowerCase()}`;
+                card.dataset.applicantId = app.id;
+                card.innerHTML = `
+                    <h4>${app.firstName} ${app.lastName} (${app.nickname})</h4>
+                    <p><strong>สถานะ:</strong> ${app.status}</p>
+                    <p><strong>คณะ:</strong> ${app.faculty}</p>
+                    <p><strong>ชั้นปี:</strong> ${app.year}</p>
+                    <button class="view-details-btn">ดูรายละเอียดและให้คะแนน</button>
+                `;
+                cardsGrid.appendChild(card);
+            });
+            
+            slotGroup.appendChild(cardsGrid);
+            cardsContainer.appendChild(slotGroup);
         });
     }
     
@@ -94,7 +159,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             tableTitle.textContent = `รายชื่อผู้สมัครโต๊ะ ${currentTable}`;
             tableSelectionView.classList.add('hidden');
             applicantListView.classList.remove('hidden');
-            renderApplicantCards();
+            populateDateFilter(); // สร้างตัวเลือกวันที่และ render ครั้งแรก
         }
     });
 
@@ -103,6 +168,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         tableSelectionView.classList.remove('hidden');
         applicantListView.classList.add('hidden');
     });
+
+    // Event listener ใหม่สำหรับตัวเลือกวันที่
+    interviewDateFilter.addEventListener('change', renderApplicantCards);
 
     cardsContainer.addEventListener('click', (e) => {
         if (e.target.classList.contains('view-details-btn')) {

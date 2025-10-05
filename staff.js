@@ -18,8 +18,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const staffModalBody = document.getElementById('staff-modal-body');
 
     let allData = [];
+    let draggedApplicantId = null; // Variable to store the ID of the dragged applicant
 
-    // --- ฟังก์ชันสำหรับ Dashboard (เหมือนเดิม) ---
+    // --- ฟังก์ชันสำหรับ Dashboard (แก้ไข) ---
     function parseDateTime(slotString) {
         if (!slotString) return { date: null, time: null, fullDate: null };
         
@@ -64,11 +65,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             tableHTML += `<tr><td><strong>โต๊ะ ${tableNum}</strong></td>`;
             slots.forEach(slot => {
                 const applicant = allData.find(app => app.table === tableNum && app.interviewSlot === slot);
+                const cellAttributes = `data-table="${tableNum}" data-slot="${slot}"`;
+
                 if (applicant) {
                     const statusClass = applicant.status === 'Arrived' ? 'arrived-in-table' : '';
-                    tableHTML += `<td class="busy ${statusClass}" data-applicant-id="${applicant.id}">${applicant.nickname}</td>`;
+                    tableHTML += `<td class="busy ${statusClass}" ${cellAttributes} data-applicant-id="${applicant.id}" draggable="true">${applicant.nickname}</td>`;
                 } else {
-                    tableHTML += '<td class="available">ว่าง</td>';
+                    tableHTML += `<td class="available" ${cellAttributes}>ว่าง</td>`;
                 }
             });
             tableHTML += '</tr>';
@@ -92,7 +95,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         staffInfoModal.classList.remove('hidden');
     }
     
-    // ... โค้ดส่วนที่เหลือเหมือนเดิมทั้งหมด ...
     // --- ฟังก์ชันสำหรับ Check-in Board ---
 
     function createApplicantCard(app) {
@@ -175,7 +177,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function populateDateFilter() {
         const dates = [...new Set(allData.map(app => parseDateTime(app.interviewSlot).date))].filter(Boolean);
-        dateFilter.innerHTML = '';
+        dateFilter.innerHTML = '<option value="all">ทุกวัน</option>';
         dates.forEach(date => {
             const option = document.createElement('option');
             option.value = date;
@@ -211,8 +213,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     allData = Database.getData();
     populateDateFilter();
     populateFilterOptions();
-    renderCheckinBoard();
-    renderTimeslotDashboard();
+    refreshDataAndRender();
 
     // --- Event Listeners ---
 
@@ -237,7 +238,62 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
+    // --- Drag and Drop Event Listeners for Dashboard ---
+    timeslotDashboard.addEventListener('dragstart', (e) => {
+        if (e.target.classList.contains('busy')) {
+            draggedApplicantId = parseInt(e.target.dataset.applicantId, 10);
+            e.dataTransfer.setData('text/plain', draggedApplicantId);
+            setTimeout(() => { // Use timeout to avoid hiding the element before drag starts
+                e.target.classList.add('dragging');
+            }, 0);
+        }
+    });
+
+    timeslotDashboard.addEventListener('dragend', (e) => {
+        e.target.classList.remove('dragging');
+    });
+
+    timeslotDashboard.addEventListener('dragover', (e) => {
+        e.preventDefault(); // Necessary to allow dropping
+        const targetCell = e.target.closest('td');
+        if (targetCell && !targetCell.classList.contains('busy')) {
+            targetCell.classList.add('drag-over');
+        }
+    });
+    
+    timeslotDashboard.addEventListener('dragleave', (e) => {
+        const targetCell = e.target.closest('td');
+        if (targetCell) {
+            targetCell.classList.remove('drag-over');
+        }
+    });
+
+    timeslotDashboard.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const targetCell = e.target.closest('td');
+        if (targetCell) {
+            targetCell.classList.remove('drag-over');
+            
+            if (targetCell.classList.contains('busy')) {
+                alert('ไม่สามารถย้ายไปยังช่องที่มีผู้สมัครอื่นอยู่แล้วได้');
+                return;
+            }
+
+            const newTable = parseInt(targetCell.dataset.table, 10);
+            const newSlot = targetCell.dataset.slot;
+
+            if (draggedApplicantId && newTable && newSlot) {
+                Database.updateApplicant(draggedApplicantId, {
+                    table: newTable,
+                    interviewSlot: newSlot
+                });
+                // The 'storageUpdated' event will automatically trigger a re-render
+            }
+            draggedApplicantId = null; // Reset after drop
+        }
+    });
+
     window.addEventListener('storageUpdated', refreshDataAndRender);
     
-    setInterval(renderTimeslotDashboard, 10000);
+    setInterval(renderTimeslotDashboard, 10000); // Auto-refresh dashboard for time changes
 });
