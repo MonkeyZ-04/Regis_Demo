@@ -1,9 +1,6 @@
-// interviewer.js
+// interviewer.js (เวอร์ชันแก้ไข Scoring Form)
 
-document.addEventListener('DOMContentLoaded', async () => {
-    // รอให้ข้อมูลโหลดเสร็จก่อนเริ่มทำงาน
-    await Database.initialize();
-    
+document.addEventListener('DOMContentLoaded', () => {
     // Elements
     const tableSelectionView = document.getElementById('table-selection-view');
     const applicantListView = document.getElementById('applicant-list-view');
@@ -14,81 +11,96 @@ document.addEventListener('DOMContentLoaded', async () => {
     const cardsContainer = document.getElementById('applicant-cards-container');
     const scoringModal = document.getElementById('scoring-modal');
     const modalBody = document.getElementById('modal-body');
-    const interviewDateFilter = document.getElementById('interview-date-filter'); // Element ใหม่
+    const interviewDateFilter = document.getElementById('interview-date-filter');
 
+    // --- State ---
     let currentTable = null;
+    let allData = [];
+    let unsubscribe = null;
 
-    function parseTimeFromSlot(slotString) {
+    // --- Helper Functions ---
+    const parseTimeFromSlot = (slotString) => {
         if (!slotString) return 'ยังไม่ระบุเวลา';
         const timeMatch = slotString.match(/(\d{2}[.:]\d{2})/);
         return timeMatch ? timeMatch[1] : slotString;
-    }
+    };
 
-    function parseDateFromSlot(slotString) {
+    const parseDateFromSlot = (slotString) => {
         if (!slotString) return null;
         const dateMatch = slotString.match(/วันที่ \d+ มีนาคม/);
         return dateMatch ? dateMatch[0] : null;
-    }
+    };
 
-    // --- ฟังก์ชันใหม่สำหรับสร้างตัวเลือกวันที่ ---
-    function populateDateFilter() {
-        const allData = Database.getData();
+    // --- ⭐ [ใหม่] ฟังก์ชันสำหรับสร้าง Dropdown คะแนน ---
+    const createScoreDropdown = (id, label, currentValue) => {
+        const scoreOptions = [
+            { value: 0, class: 'score-0' },
+            { value: 1, class: 'score-1' },
+            { value: 2, class: 'score-2' },
+            { value: 3, class: 'score-3' },
+            { value: 4, class: 'score-4' },
+            { value: 5, class: 'score-5' },
+        ];
+
+        let optionsHTML = scoreOptions.map(opt =>
+            `<option value="${opt.value}" class="${opt.class}" ${opt.value === currentValue ? 'selected' : ''}>${opt.value}</option>`
+        ).join('');
+
+        // หา class สีที่ถูกต้องสำหรับค่าปัจจุบันเพื่อกำหนดให้ select ตอนเริ่มต้น
+        const initialClass = scoreOptions.find(opt => opt.value === currentValue)?.class || 'score-1';
+
+        return `
+            <div class="score-item">
+                <label for="${id}">${label}:</label>
+                <select id="${id}" class="score-select ${initialClass}">
+                    ${optionsHTML}
+                </select>
+            </div>
+        `;
+    };
+
+
+    // --- Rendering Functions ---
+    const populateDateFilter = () => {
         const dates = [...new Set(allData.map(app => parseDateFromSlot(app.interviewSlot)))].filter(Boolean);
-        
-        interviewDateFilter.innerHTML = ''; // Clear existing options
+        const currentVal = interviewDateFilter.value;
+        interviewDateFilter.innerHTML = '';
         dates.forEach(date => {
             const option = document.createElement('option');
             option.value = date;
             option.textContent = date;
             interviewDateFilter.appendChild(option);
         });
+        if(currentVal && dates.includes(currentVal)) interviewDateFilter.value = currentVal;
+    };
 
-        // Trigger render for the first time
-        renderApplicantCards();
-    }
-
-    function renderApplicantCards() {
+    const renderApplicantCards = () => {
         if (!currentTable) return;
         cardsContainer.innerHTML = '';
-        const allData = Database.getData();
         const selectedDate = interviewDateFilter.value;
-
-        // กรองผู้สมัครตามโต๊ะและวันที่ที่เลือก
-        const applicantsForTableAndDate = allData.filter(app => 
+        const applicantsForTableAndDate = allData.filter(app =>
             app.table === currentTable && parseDateFromSlot(app.interviewSlot) === selectedDate
         );
-
         if (applicantsForTableAndDate.length === 0) {
             cardsContainer.innerHTML = '<p>ยังไม่มีผู้สมัครสำหรับโต๊ะและวันที่นี้</p>';
             return;
         }
-
-        // จัดกลุ่มผู้สมัครตามช่วงเวลา
         const applicantsBySlot = applicantsForTableAndDate.reduce((acc, app) => {
             const slot = app.interviewSlot || 'Unscheduled';
-            if (!acc[slot]) {
-                acc[slot] = [];
-            }
+            if (!acc[slot]) acc[slot] = [];
             acc[slot].push(app);
             return acc;
         }, {});
-
-        // เรียงลำดับช่วงเวลา
         const sortedSlots = Object.keys(applicantsBySlot).sort();
-
-        // แสดงผลแต่ละกลุ่มช่วงเวลา
         sortedSlots.forEach(slot => {
             const slotGroup = document.createElement('div');
             slotGroup.className = 'timeslot-group';
-
             const slotTitle = document.createElement('h3');
             slotTitle.className = 'timeslot-header';
             slotTitle.textContent = `รอบเวลา: ${parseTimeFromSlot(slot)}`;
             slotGroup.appendChild(slotTitle);
-
             const cardsGrid = document.createElement('div');
             cardsGrid.className = 'applicant-grid';
-
             applicantsBySlot[slot].forEach(app => {
                 const card = document.createElement('div');
                 card.className = `info-card ${app.status.toLowerCase()}`;
@@ -102,14 +114,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 `;
                 cardsGrid.appendChild(card);
             });
-            
             slotGroup.appendChild(cardsGrid);
             cardsContainer.appendChild(slotGroup);
         });
-    }
-    
-    function showScoringModal(applicantId) {
-        const applicant = Database.getData().find(a => a.id === applicantId);
+    };
+
+    // --- ⭐ [แก้ไข] ฟังก์ชันแสดง Modal ให้ใช้ Dropdown ---
+    const showScoringModal = (applicantId) => {
+        const applicant = allData.find(a => a.id === applicantId);
         if (!applicant) return;
 
         modalBody.innerHTML = `
@@ -123,24 +135,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <p><a href="${applicant.applicationUrl}" target="_blank">ดูใบสมัคร (PDF)</a></p>
             </div>
             <hr>
-            <h3>ให้คะแนน</h3>
+            <h3>ให้คะแนน (0-5)</h3>
             <form id="scoring-form" data-id="${applicant.id}">
-                <div class="score-item">
-                    <label for="passion">Passion (0-10):</label>
-                    <input type="number" id="passion" min="0" max="10" value="${applicant.scores.passion}">
-                </div>
-                <div class="score-item">
-                    <label for="teamwork">Teamwork (0-10):</label>
-                    <input type="number" id="teamwork" min="0" max="10" value="${applicant.scores.teamwork}">
-                </div>
-                <div class="score-item">
-                    <label for="attitude">Attitude (0-10):</label>
-                    <input type="number" id="attitude" min="0" max="10" value="${applicant.scores.attitude}">
-                </div>
-                <div class="score-item">
-                    <label for="creativity">Creativity (0-10):</label>
-                    <input type="number" id="creativity" min="0" max="10" value="${applicant.scores.creativity}">
-                </div>
+                ${createScoreDropdown('passion', 'Passion', applicant.scores.passion)}
+                ${createScoreDropdown('teamwork', 'Teamwork', applicant.scores.teamwork)}
+                ${createScoreDropdown('attitude', 'Attitude', applicant.scores.attitude)}
+                ${createScoreDropdown('creativity', 'Creativity', applicant.scores.creativity)}
                 <div class="score-item">
                     <label for="notes">หมายเหตุ:</label>
                     <textarea id="notes">${applicant.notes}</textarea>
@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             </form>
         `;
         scoringModal.classList.remove('hidden');
-    }
+    };
 
     // --- Event Listeners ---
     confirmTableBtn.addEventListener('click', () => {
@@ -159,19 +159,27 @@ document.addEventListener('DOMContentLoaded', async () => {
             tableTitle.textContent = `รายชื่อผู้สมัครโต๊ะ ${currentTable}`;
             tableSelectionView.classList.add('hidden');
             applicantListView.classList.remove('hidden');
-            populateDateFilter(); // สร้างตัวเลือกวันที่และ render ครั้งแรก
+
+            unsubscribe = Database.onDataChange(newData => {
+                const isFirstLoad = allData.length === 0;
+                allData = newData;
+                if (isFirstLoad) {
+                    populateDateFilter();
+                }
+                renderApplicantCards();
+            });
         }
     });
 
     backToSelectionBtn.addEventListener('click', () => {
         currentTable = null;
+        allData = [];
         tableSelectionView.classList.remove('hidden');
         applicantListView.classList.add('hidden');
+        if (unsubscribe) unsubscribe();
     });
 
-    // Event listener ใหม่สำหรับตัวเลือกวันที่
     interviewDateFilter.addEventListener('change', renderApplicantCards);
-
     cardsContainer.addEventListener('click', (e) => {
         if (e.target.classList.contains('view-details-btn')) {
             const card = e.target.closest('.info-card');
@@ -186,6 +194,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
+    // --- ⭐ [แก้ไข] Listener 2 ตัวสำหรับ Modal ---
+    // 1. Listener สำหรับเปลี่ยนสี Dropdown เมื่อเลือกค่าใหม่
+    modalBody.addEventListener('change', (e) => {
+        if (e.target.classList.contains('score-select')) {
+            const select = e.target;
+            // ลบ class สีเก่าทั้งหมดออก
+            select.className = 'score-select'; 
+            // เพิ่ม class สีใหม่จาก option ที่ถูกเลือก
+            const selectedOption = select.options[select.selectedIndex];
+            select.classList.add(selectedOption.classList[0]);
+        }
+    });
+
+    // 2. Listener สำหรับบันทึกคะแนน (อ่านค่าจาก select แทน input)
     modalBody.addEventListener('submit', (e) => {
         if (e.target.id === 'scoring-form') {
             e.preventDefault();
@@ -197,16 +219,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 creativity: parseInt(document.getElementById('creativity').value, 10)
             };
             const notes = document.getElementById('notes').value;
-
             Database.updateApplicant(applicantId, { scores, notes });
             alert('บันทึกคะแนนเรียบร้อย!');
             scoringModal.classList.add('hidden');
-        }
-    });
-    
-    window.addEventListener('storageUpdated', () => {
-        if(currentTable){
-            renderApplicantCards();
         }
     });
 });

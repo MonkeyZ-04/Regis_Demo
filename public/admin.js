@@ -1,16 +1,12 @@
 // admin.js
 
-document.addEventListener('DOMContentLoaded', async () => {
-    // รอให้ข้อมูลโหลดเสร็จก่อนเริ่มทำงาน
-    await Database.initialize();
-    
+document.addEventListener('DOMContentLoaded', () => {
     const adminOverview = document.getElementById('admin-overview');
     const scoreChartCtx = document.getElementById('score-chart').getContext('2d');
     let chartInstance;
+    let allData = [];
 
     function renderAdminView() {
-        const allData = Database.getData();
-        
         // --- Render Overview Board ---
         adminOverview.innerHTML = '';
         const columns = {};
@@ -18,7 +14,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             columns[`table-${i}`] = [];
         }
         allData.forEach(item => {
-            if (columns[`table-${item.table}`]) {
+            if (item.table && columns[`table-${item.table}`]) {
                 columns[`table-${item.table}`].push(item);
             }
         });
@@ -27,7 +23,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const tableNumber = columnId.split('-')[1];
             const columnEl = document.createElement('div');
             columnEl.className = 'kanban-column';
-            let itemsHtml = items.map(app => 
+            let itemsHtml = items.map(app =>
                 `<div class="applicant-card small ${app.status.toLowerCase()}">
                     ${app.nickname} <span class="status ${app.status.toLowerCase()}">${app.status.charAt(0)}</span>
                 </div>`
@@ -46,7 +42,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         const labels = sortedData.map(app => app.nickname);
-        const totalScores = sortedData.map(app => 
+        const totalScores = sortedData.map(app =>
             Object.values(app.scores).reduce((sum, score) => sum + score, 0)
         );
 
@@ -67,15 +63,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             },
             options: {
                 indexAxis: 'y',
-                scales: {
-                    x: {
-                        beginAtZero: true
-                    }
-                },
+                scales: { x: { beginAtZero: true } },
                 plugins: {
-                    legend: {
-                        display: false
-                    },
+                    legend: { display: false },
                     title: {
                         display: true,
                         text: 'สรุปคะแนนรวมผู้สมัคร (เรียงจากมากไปน้อย)'
@@ -85,8 +75,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    renderAdminView();
-
-    // อัปเดตหน้าจออัตโนมัติ
-    window.addEventListener('storageUpdated', renderAdminView);
+    // --- Real-time Listener ---
+    Database.onDataChange(newData => {
+        allData = newData;
+        renderAdminView();
+    });
 });

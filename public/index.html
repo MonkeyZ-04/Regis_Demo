@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>Regis Demo - Main Menu</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* เพิ่มสไตล์เล็กน้อยสำหรับหน้าเมนู */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            text-align: center;
+        }
+        .menu-container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .menu-container h1 {
+            margin-bottom: 30px;
+        }
+        .menu-container a {
+            display: block;
+            padding: 15px 30px;
+            margin: 10px 0;
+            font-size: 18px;
+            text-decoration: none;
+            color: white;
+            background-color: #007bff;
+            border-radius: 5px;
+            transition: background-color 0.2s;
+        }
+        .menu-container a:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="menu-container">
+        <h1>Registration System</h1>
+        <a href="/staff.html">Staff Control Panel</a>
+        <a href="/interviewer.html">Interviewer Page</a>
+        <a href="/admin.html">Admin Dashboard</a>
+    </div>
+</body>
+</html>

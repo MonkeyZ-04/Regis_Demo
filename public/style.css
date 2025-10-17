@@ -53,7 +53,10 @@ button:hover { background-color: #f0f0f0; }
     transition: transform 0.2s;
 }
 .info-card:hover { transform: translateY(-3px); }
-.info-card.arrived, .applicant-card.arrived { border-left-color: #28a745; }
+.info-card.arrived, .applicant-card.arrived, .view-details-btn.status.arrived { 
+    border-left-color: #28a745;  
+    background-color: #dcf3e4;
+}
 .info-card h3 { margin: 0 0 10px 0; }
 .info-card p { margin: 5px 0; }
 
@@ -407,3 +410,25 @@ header div {
     gap: 15px;
     align-items: center;
 }
+/* สไตล์พื้นฐานสำหรับ dropdown ให้คะแนน */
+.score-select {
+    padding: 12px;
+    border: 5px solid background-color;
+    border-radius: 4px;
+    -webkit-appearance: none; /* ลบสไตล์พื้นฐานของ browser */
+    -moz-appearance: none;
+    appearance: none;
+    background-color: #f8f9fa; /* สีพื้นหลังเริ่มต้น */
+    font-weight: bold;
+    text-align: center;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+/* สไตล์สำหรับสีพื้นหลังของแต่ละคะแนน */
+.score-0 { background-color: #e9ecef; color: #495057; } /* ดำอ่อน (เทาเข้ม) */
+.score-1 { background-color: #f8f9fa; color: #495057; } /* เทาอ่อน */
+.score-2 { background-color: #f8d7da; color: #721c24; } /* แดงอ่อน */
+.score-3 { background-color: #fff3cd; color: #856404; } /* เหลืองอ่อน */
+.score-4 { background-color: #d4edda; color: #155724; } /* เขียวอ่อน */
+.score-5 { background-color: #d1ecf1; color: #0c5460; } /* ฟ้าอ่อน */
