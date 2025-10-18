@@ -27,8 +27,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const parseDateFromSlot = (slotString) => {
         if (!slotString) return null;
-        const dateMatch = slotString.match(/วันที่ \d+ มีนาคม/);
-        return dateMatch ? dateMatch[0] : null;
+        // 1. แก้ไข: มองหา "ตุลาคม" และรองรับ "วันที" (ที่สะกดผิด)
+        const dateMatch = slotString.match(/(วันที่|วันที) \d+ ตุลาคม/);
+        // 2. แก้ไข: แปลง "วันที" -> "วันที่" อัตโนมัติ
+        return dateMatch ? dateMatch[0].replace('วันที', 'วันที่') : null;
     };
 
     // --- ⭐ [ใหม่] ฟังก์ชันสำหรับสร้าง Dropdown คะแนน ---

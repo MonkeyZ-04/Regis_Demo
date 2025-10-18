@@ -1,4 +1,4 @@
-// staff.js (เวอร์ชันแก้ไข столбецซ้ำ)
+// staff.js (เวอร์ชันแก้ไข เพิ่ม dropdown เปลี่ยนวันที่)
 
 document.addEventListener('DOMContentLoaded', () => {
     try {
@@ -44,16 +44,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const parseDateTime = (slotString) => {
             if (!slotString) return { date: null, time: null, fullDate: null };
-            const dateMatch = slotString.match(/วันที่ \d+ มีนาคม/);
-            const datePart = dateMatch ? dateMatch[0] : null;
+            
+            // 1. แก้ไข: มองหา "ตุลาคม" และรองรับ "วันที" (ที่สะกดผิด)
+            const dateMatch = slotString.match(/(วันที่|วันที) \d+ ตุลาคม/);
+            // 2. แก้ไข: แปลง "วันที" -> "วันที่" อัตโนมัติ
+            const datePart = dateMatch ? dateMatch[0].replace('วันที', 'วันที่') : null; 
+            
             const timeMatch = slotString.match(/(\d{2}[.:]\d{2})/);
             const timePart = timeMatch ? timeMatch[0] : null;
             let fullDate = null;
+            
             if (datePart && timePart) {
                 const day = parseInt(datePart.match(/\d+/)[0], 10);
                 const [hour, minute] = timePart.split(/[.:]/).map(Number);
                 const now = new Date();
-                fullDate = new Date(now.getFullYear(), 2, day, hour, minute);
+                fullDate = new Date(now.getFullYear(), 9, day, hour, minute); 
             }
             return { date: datePart, time: timePart, fullDate: fullDate };
         };
@@ -121,7 +126,11 @@ document.addEventListener('DOMContentLoaded', () => {
             timeslotDashboard.innerHTML = tableHTML;
         };
 
-        const renderCheckinBoard = () => {
+        /**
+         * ⭐ [แก้ไข] renderCheckinBoard
+         * รับ allDates มาเพื่อสร้าง dropdown
+         */
+        const renderCheckinBoard = (allDates) => {
             pendingList.innerHTML = '';
             arrivedList.innerHTML = '';
             const searchTerm = searchBox.value.toLowerCase();
@@ -135,9 +144,17 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             filteredData.forEach(app => {
+                // --- NEW: สร้าง HTML สำหรับ options วันที่ ---
+                const currentDate = parseDateTime(app.interviewSlot).date;
+                const dateOptions = allDates.map(date => 
+                    `<option value="${date}" ${date === currentDate ? 'selected' : ''}>${date}</option>`
+                ).join('');
+
                 const card = document.createElement('div');
                 card.className = `staff-card ${app.status.toLowerCase()}`;
                 card.dataset.id = app.id;
+                
+                // --- NEW: เพิ่ม date-select-dropdown เข้าไปใน HTML ---
                 card.innerHTML = `
                     <div class="card-main-info">
                         <h4>${app.firstName} ${app.lastName} (${app.nickname})</h4>
@@ -145,6 +162,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         <p class="interview-slot">รอบ: ${app.interviewSlot}</p>
                     </div>
                     <div class="card-actions">
+                        <div class="action-item">
+                            <label>วันที่:</label>
+                            <select class="date-select-dropdown">${dateOptions}</select>
+                        </div>
                         <div class="action-item">
                             <label>โต๊ะ:</label>
                             <select class="table-select-dropdown">${[1,2,3,4,5,6,7,8].map(n => `<option value="${n}" ${n === app.table ? 'selected' : ''}>${n}</option>`).join('')}</select>
@@ -158,8 +179,13 @@ document.addEventListener('DOMContentLoaded', () => {
             arrivedCountEl.textContent = allData.filter(a => a.status === 'Arrived').length;
         };
 
-        const populateFilters = () => {
-            const dates = [...new Set(allData.map(app => parseDateTime(app.interviewSlot).date))].filter(Boolean);
+        /**
+         * ⭐ [แก้ไข] populateFilters
+         * รับ allDates มาจาก onDataChange
+         */
+        const populateFilters = (allDates) => {
+            // const dates = [...new Set(allData.map(app => parseDateTime(app.interviewSlot).date))].filter(Boolean); // ถูกย้ายไป onDataChange
+            const dates = allDates; // ใช้ค่าที่ส่งเข้ามา
             const currentValDate = dateFilter.value;
             dateFilter.innerHTML = '';
             dates.forEach(date => {
@@ -168,8 +194,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 option.textContent = date;
                 dateFilter.appendChild(option);
             });
-            if (currentValDate && dates.includes(currentValDate)) dateFilter.value = currentValDate;
-            
+            if (currentValDate && dates.includes(currentValDate)) {
+                dateFilter.value = currentValDate;
+            } 
+            else if (dates.length > 0) {
+                dateFilter.value = dates[0]; 
+            }
             const slots = [...new Set(allData.map(app => app.interviewSlot))].filter(Boolean).sort();
             const currentValSlot = filterSlot.value;
             while (filterSlot.options.length > 1) filterSlot.remove(1);
@@ -182,13 +212,41 @@ document.addEventListener('DOMContentLoaded', () => {
             if(currentValSlot) filterSlot.value = currentValSlot;
         };
 
+        /**
+         * ⭐ [แก้ไข] handleAction
+         * เพิ่ม logic สำหรับ .date-select-dropdown
+         */
         const handleAction = (e) => {
             const card = e.target.closest('.staff-card');
             if (!card) return;
             const id = parseInt(card.dataset.id, 10);
-            if (e.target.classList.contains('check-in-btn')) Database.updateApplicant(id, { status: 'Arrived' });
-            if (e.target.classList.contains('undo-check-in-btn')) Database.updateApplicant(id, { status: 'Pending' });
-            if (e.target.classList.contains('table-select-dropdown')) Database.updateApplicant(id, { table: parseInt(e.target.value, 10) });
+
+            if (e.target.classList.contains('check-in-btn')) {
+                Database.updateApplicant(id, { status: 'Arrived' });
+            }
+            if (e.target.classList.contains('undo-check-in-btn')) {
+                Database.updateApplicant(id, { status: 'Pending' });
+            }
+            if (e.target.classList.contains('table-select-dropdown')) {
+                Database.updateApplicant(id, { table: parseInt(e.target.value, 10) });
+            }
+            // --- NEW: Logic สำหรับการเปลี่ยนวันที่ ---
+            if (e.target.classList.contains('date-select-dropdown')) {
+                const newDate = e.target.value;
+                const applicant = allData.find(app => app.id === id);
+                
+                if (applicant && applicant.interviewSlot) {
+                    const { time } = parseDateTime(applicant.interviewSlot); // ดึงเวลาเดิมออกมา
+                    if (time) {
+                        // สร้าง slot ใหม่โดยใช้วันที่ใหม่ + เวลาเดิม
+                        const newSlot = `${newDate} ${time}`;
+                        Database.updateApplicant(id, { interviewSlot: newSlot });
+                    } else {
+                        // กรณีที่ slot ไม่มีเวลา (ไม่ควรเกิดขึ้น แต่ป้องกันไว้)
+                        console.warn(`Applicant ${id} has no time part in their slot "${applicant.interviewSlot}". Cannot update date.`);
+                    }
+                }
+            }
         };
 
         const showApplicantModal = (applicantId) => {
@@ -205,9 +263,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // --- Event Listeners ---
-        searchBox.addEventListener('input', renderCheckinBoard);
-        filterSlot.addEventListener('change', renderCheckinBoard);
-        filterStatus.addEventListener('change', renderCheckinBoard);
+        searchBox.addEventListener('input', () => renderCheckinBoard([...new Set(allData.map(app => parseDateTime(app.interviewSlot).date))].filter(Boolean))); // ต้องส่ง allDates ไปด้วย
+        filterSlot.addEventListener('change', () => renderCheckinBoard([...new Set(allData.map(app => parseDateTime(app.interviewSlot).date))].filter(Boolean))); // ต้องส่ง allDates ไปด้วย
+        filterStatus.addEventListener('change', () => renderCheckinBoard([...new Set(allData.map(app => parseDateTime(app.interviewSlot).date))].filter(Boolean))); // ต้องส่ง allDates ไปด้วย
+        
         dateFilter.addEventListener('change', renderTimeslotDashboard);
         document.querySelector('.staff-board').addEventListener('click', handleAction);
         document.querySelector('.staff-board').addEventListener('change', handleAction);
@@ -246,16 +305,22 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // --- Real-time Listener ---
-        console.log("[staff.js] กำลังรอรับข้อมูลจาก Firebase...");
+        /**
+         * ⭐ [แก้ไข] Real-time Listener
+         * ดึง allDates ออกมาก่อน แล้วส่งต่อไปยังฟังก์ชันลูก
+         */
+        console.log("[staff.js] กำลังรอรับข้อมูล...");
         Database.onDataChange(newData => {
             console.log(`[staff.js] ได้รับข้อมูลใหม่! มีทั้งหมด: ${newData.length} รายการ`);
             
             allData = newData;
+
+            // --- NEW: ดึงวันที่ทั้งหมดออกมาก่อน ---
+            const allDates = [...new Set(allData.map(app => parseDateTime(app.interviewSlot).date))].filter(Boolean);
             
-            populateFilters();
-            
-            renderCheckinBoard();
+            // ส่ง allDates ไปให้ฟังก์ชันที่เกี่ยวข้อง
+            populateFilters(allDates);
+            renderCheckinBoard(allDates);
             renderTimeslotDashboard();
         });
         
