@@ -1,4 +1,4 @@
-// data.js
+// data.js (เวอร์ชันอัปเดต - แปลงเป็น English Key)
 
 const DB_KEY = 'interviewData';
 
@@ -11,17 +11,40 @@ function shuffleArray(array) {
     return array;
 }
 
+// ⭐️ [เพิ่ม] ฟังก์ชันสำหรับแปลงข้อมูลไทยเป็น English Key ⭐️
+function parseThaiSlot(slotString) {
+    if (!slotString) return { dateKey: null, timeKey: null, original: slotString };
+    
+    let dateKey = null;
+    // --- (ปรับแก้ Regex ให้ตรงกับข้อมูลของคุณ) ---
+    if (slotString.includes("วันที่ 22 ตุลาคม") || slotString.includes("วันที 22 ตุลาคม")) dateKey = "2025-10-22";
+    if (slotString.includes("วันที่ 24 ตุลาคม") || slotString.includes("วันที 24 ตุลาคม")) dateKey = "2025-10-24";
+    if (slotString.includes("เวลาสำรอง")) dateKey = "RESERVE";
+    // ------------------------------------------
+
+    let timeKey = null;
+    const timeMatch = slotString.match(/(\d{2}[.:]\d{2})/); // Get first time (e.g., 16.30)
+    if (timeMatch) {
+        timeKey = timeMatch[1].replace('.', ':'); // Standardize to 16:30
+    }
+
+    // ถ้าหาเวลาไม่เจอ แต่เป็นเวลาสำรอง ให้ตั้งค่าหลอกไว้
+    if (dateKey === "RESERVE" && !timeKey) timeKey = "RESERVE";
+
+    return { dateKey, timeKey, original: slotString };
+}
+
+
 const Database = {
     // ฟังก์ชันนี้จะทำหน้าที่เตรียมข้อมูลให้พร้อมใช้งาน
     initialize: async () => {
         const localData = localStorage.getItem(DB_KEY);
         if (localData) {
-            // If data is already in localStorage, just parse and return it.
-            // This is faster and preserves changes.
+            // ถ้ามีข้อมูลใน Local Storage อยู่แล้ว ให้ใช้เลย
             return JSON.parse(localData);
         }
 
-        // If no local data, fetch from db.json
+        // ถ้าไม่มี ให้ดึงจาก db.json
         try {
             const response = await fetch('db.json');
             if (!response.ok) {
@@ -32,14 +55,18 @@ const Database = {
             // 1. จัดกลุ่มผู้สมัครตามรอบเวลา (interviewSlot)
             const applicantsBySlot = {};
             jsonData.forEach((row, index) => {
-                // *** IMPORTANT: Adjust this key to match your db.json ***
-                const interviewSlot = row['เลือกวันเวลาที่สะดวกสัมภาษณ์']; 
-                if (!interviewSlot) return; // ข้ามข้อมูลที่ไม่มีรอบเวลา
+                // ⭐️ [แก้ไข] เปลี่ยนมาใช้ตัวแปรใหม่ ⭐️
+                const thaiSlot = row['เลือกวันเวลาที่สะดวกสัมภาษณ์']; 
+                if (!thaiSlot) return; // ข้ามข้อมูลที่ไม่มีรอบเวลา
 
-                if (!applicantsBySlot[interviewSlot]) {
-                    applicantsBySlot[interviewSlot] = [];
+                if (!applicantsBySlot[thaiSlot]) {
+                    applicantsBySlot[thaiSlot] = [];
                 }
-                applicantsBySlot[interviewSlot].push({
+
+                // ⭐️ [แก้ไข] แปลงข้อมูลไทยเป็น English Key ที่นี่ ⭐️
+                const parsedSlot = parseThaiSlot(thaiSlot);
+
+                applicantsBySlot[thaiSlot].push({
                     id: index + 1,
                     timestamp: row['ประทับเวลา'],
                     email: row['ที่อยู่อีเมล'],
@@ -53,7 +80,13 @@ const Database = {
                     contactLine: row['ช่องทางการติดต่อ (Line ID)'],
                     contactOther: row['ช่องทางการติดต่อสำรอง (IG, Facebook, นกพิราบสื่อสาร etc.)'],
                     applicationUrl: row['อัพโหลดใบสมัครไว้ตรงนี้จู้ (ไฟล์ pdf)'],
-                    interviewSlot: row['เลือกวันเวลาที่สะดวกสัมภาษณ์'],
+                    
+                    // --- [ บล็อกข้อมูลใหม่ ] ---
+                    interviewDate: parsedSlot.dateKey, // e.g., "2025-10-22"
+                    interviewTime: parsedSlot.timeKey, // e.g., "16:30"
+                    interviewSlotOriginal: parsedSlot.original, // The full Thai string, for display
+                    // --- [ จบ ] ---
+
                     status: 'Pending',
                     scores: { passion: 0, teamwork: 0, attitude: 0, creativity: 0 },
                     notes: ''
@@ -77,7 +110,7 @@ const Database = {
             return initialData;
         } catch (error) {
             console.error("Could not load initial data from db.json:", error);
-            alert("เกิดข้อผิดพลาด: ไม่สามารถโหลดไฟล์ข้อมูล db.json ได้ \n\nโปรดตรวจสอบว่าไฟล์ db.json อยู่ในโฟลเดอร์ public/ และมี format ที่ถูกต้อง");
+            alert("เกิดข้อผิดพลาด: ไม่สามารถโหลดไฟล์ข้อมูล db.json ได้ \n\nโปรดตรวจสอบว่าไฟล์ db.json อยู่ในโฟลเดอร์ public/ และมี format ที่ถูกต้อง \n\n" + error.message);
             return [];
         }
     },
@@ -108,10 +141,12 @@ const Database = {
         
         const applicantsBySlot = {};
         allData.forEach(applicant => {
-            if (!applicantsBySlot[applicant.interviewSlot]) {
-                applicantsBySlot[applicant.interviewSlot] = [];
+            // ⭐️ [แก้ไข] จัดกลุ่มด้วย Key ใหม่ ⭐️
+            const slotKey = applicant.interviewSlotOriginal || 'Unassigned';
+            if (!applicantsBySlot[slotKey]) {
+                applicantsBySlot[slotKey] = [];
             }
-            applicantsBySlot[applicant.interviewSlot].push(applicant);
+            applicantsBySlot[slotKey].push(applicant);
         });
 
         let shuffledData = [];
@@ -148,7 +183,6 @@ const Database = {
         });
 
         // 4. Return an "unsubscribe" function
-        // This stops the listener when the component unmounts (e.g., interviewer goes back to table select)
         return () => {
             console.log('[data.js] Removing storageUpdated listener.');
             window.removeEventListener('storageUpdated', storageUpdateHandler);

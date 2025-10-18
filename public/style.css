@@ -432,3 +432,65 @@ header div {
 .score-3 { background-color: #fff3cd; color: #856404; } /* เหลืองอ่อน */
 .score-4 { background-color: #d4edda; color: #155724; } /* เขียวอ่อน */
 .score-5 { background-color: #d1ecf1; color: #0c5460; } /* ฟ้าอ่อน */
+
+/* --- [ ⭐️ เพิ่มโค้ดนี้ที่ท้ายไฟล์ style.css ⭐️ ] --- */
+
+/* 1. สไตล์สำหรับ Split-Screen Layout */
+.split-container {
+    display: flex;
+    flex-direction: row;
+    height: calc(100vh - 120px); /* ความสูงเต็มจอ (ลบ header) */
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+/* 2. ส่วนซ้าย (รายชื่อ) */
+.split-pane-list {
+    flex: 1; /* ให้ขยายได้ */
+    min-width: 320px; /* ความกว้างขั้นต่ำ */
+    max-width: 40%; /* ความกว้างสูงสุด 40% */
+    overflow-y: auto; /* มี Scrollbar ถ้าล้น */
+    background-color: #f8f9fa;
+    border-right: 1px solid #ddd;
+    padding: 10px;
+}
+
+/* 3. ส่วนขวา (ฟอร์มให้คะแนน) */
+.split-pane-details {
+    flex: 1.5; /* ให้กว้างกว่าส่วนซ้าย (1.5 เท่า) */
+    overflow-y: auto; /* มี Scrollbar ถ้าล้น */
+    background-color: #ffffff;
+}
+
+#scoring-view-body {
+    padding: 30px;
+}
+
+/* 4. ข้อความเริ่มต้น (placeholder) */
+.placeholder-text {
+    font-size: 18px;
+    color: #888;
+    text-align: center;
+    margin-top: 50px;
+    font-style: italic;
+}
+
+/* 5. สไตล์สำหรับ Card ที่กำลังถูกเลือก (Active) */
+.info-card.active-card {
+    background-color: #e6f2ff;
+    border-left-color: #007bff;
+    box-shadow: 0 4px 8px rgba(0,123,255,0.2);
+    transform: translateY(0);
+}
+
+/* 6. (ปรับปรุง) ลบเงา Hover เมื่อเป็น Active */
+.info-card.active-card:hover {
+    transform: translateY(0);
+}
+
+
+/* 7. ลบสไตล์ Modal ที่ไม่ใช้แล้ว (กันเหนียว) */
+.modal-backdrop, .modal-content {
+    display: none;
+}

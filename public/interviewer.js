@@ -1,7 +1,7 @@
-// interviewer.js (เวอร์ชันอัปเดตล่าสุด)
+// interviewer.js (เวอร์ชันอัปเดต - Split-Screen)
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Elements
+    // --- [ ⭐️ แก้ไข Elements ⭐️ ] ---
     const tableSelectionView = document.getElementById('table-selection-view');
     const applicantListView = document.getElementById('applicant-list-view');
     const tableSelect = document.getElementById('table-select');
@@ -9,34 +9,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const backToSelectionBtn = document.getElementById('back-to-selection-btn');
     const tableTitle = document.getElementById('table-title');
     const cardsContainer = document.getElementById('applicant-cards-container');
-    const scoringModal = document.getElementById('scoring-modal');
-    const modalBody = document.getElementById('modal-body');
-    const interviewDateFilter = document.getElementById('interview-date-filter');
+    
+    // (ลบ const scoringModal และ modalBody)
+    // (เพิ่ม)
+    const scoringViewBody = document.getElementById('scoring-view-body'); 
+    
+    // --- [ ⭐️ จบ ⭐️ ] ---
 
     // --- State ---
     let currentTable = null;
     let allData = [];
     let unsubscribe = null;
 
-    // --- Helper Functions ---
-    const parseTimeFromSlot = (slotString) => {
-        if (!slotString) return 'ยังไม่ระบุเวลา';
-        const timeMatch = slotString.match(/(\d{2}[.:]\d{2})/);
-        return timeMatch ? timeMatch[1] : slotString;
+    // (Map สำหรับแสดงผล Date Key)
+    const DATE_DISPLAY_MAP = {
+        "2025-10-22": "วันที่ 22 ตุลาคม",
+        "2025-10-24": "วันที่ 24 ตุลาคม",
+        "RESERVE": "เวลาสำรอง"
     };
 
-    /**
-     * ⭐ [จุดแก้ไขที่ 1]
-     * แก้ไขให้มองหา "ตุลาคม" และแก้ "วันที" ที่สะกดผิดเป็น "วันที่"
-     */
-    const parseDateFromSlot = (slotString) => {
-        if (!slotString) return null;
-        // 1. มองหา "ตุลาคม" และรองรับ "วันที" (ที่สะกดผิด)
-        const dateMatch = slotString.match(/(วันที่|วันที) \d+ ตุลาคม/);
-        // 2. แปลง "วันที" -> "วันที่" อัตโนมัติ
-        return dateMatch ? dateMatch[0].replace('วันที', 'วันที่') : null;
-    };
-
+    // (ฟังก์ชัน createScoreDropdown - เหมือนเดิม)
     const createScoreDropdown = (id, label, currentValue) => {
         const scoreOptions = [
             { value: 0, class: 'score-0' },
@@ -65,26 +57,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // --- Rendering Functions ---
+    // (populateDateFilter - เหมือนเดิม)
     const populateDateFilter = () => {
-        const dates = [...new Set(allData.map(app => parseDateFromSlot(app.interviewSlot)))].filter(Boolean);
+        const dates = [...new Set(allData.map(app => app.interviewDate))].filter(Boolean).filter(d => d !== 'RESERVE');
         const currentVal = interviewDateFilter.value;
         interviewDateFilter.innerHTML = '';
-        dates.forEach(date => {
+        
+        dates.forEach(dateKey => {
             const option = document.createElement('option');
-            option.value = date;
-            option.textContent = date;
+            option.value = dateKey;
+            option.textContent = DATE_DISPLAY_MAP[dateKey] || dateKey;
             interviewDateFilter.appendChild(option);
         });
         
-        // --- เพิ่ม logic เลือกวันแรกอัตโนมัติ ---
         if(currentVal && dates.includes(currentVal)) {
              interviewDateFilter.value = currentVal;
         } else if (dates.length > 0) {
             interviewDateFilter.value = dates[0];
         }
-        // ---------------------------------
     };
 
+    // (renderApplicantCards - เหมือนเดิม)
     const renderApplicantCards = () => {
         if (!currentTable) return;
         cardsContainer.innerHTML = '';
@@ -96,26 +89,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         const applicantsForTableAndDate = allData.filter(app =>
-            app.table === currentTable && parseDateFromSlot(app.interviewSlot) === selectedDate
+            app.table === currentTable && app.interviewDate === selectedDate
         );
+
         if (applicantsForTableAndDate.length === 0) {
             cardsContainer.innerHTML = '<p>ยังไม่มีผู้สมัครสำหรับโต๊ะและวันที่นี้</p>';
+            
+            // ⭐️ [เพิ่ม] ถ้าไม่มีผู้สมัคร ให้เคลียร์ฟอร์มด้านขวาด้วย ⭐️
+            scoringViewBody.innerHTML = '<p class="placeholder-text">ไม่มีผู้สมัครสำหรับโต๊ะและวันที่นี้</p>';
             return;
         }
+        
         const applicantsBySlot = applicantsForTableAndDate.reduce((acc, app) => {
-            const slot = app.interviewSlot || 'Unscheduled';
+            const slot = app.interviewTime || 'Unscheduled';
             if (!acc[slot]) acc[slot] = [];
             acc[slot].push(app);
             return acc;
         }, {});
+
         const sortedSlots = Object.keys(applicantsBySlot).sort();
+        
         sortedSlots.forEach(slot => {
             const slotGroup = document.createElement('div');
             slotGroup.className = 'timeslot-group';
             const slotTitle = document.createElement('h3');
             slotTitle.className = 'timeslot-header';
-            slotTitle.textContent = `รอบเวลา: ${parseTimeFromSlot(slot)}`;
+            slotTitle.textContent = `รอบเวลา: ${slot}`;
             slotGroup.appendChild(slotTitle);
+            
             const cardsGrid = document.createElement('div');
             cardsGrid.className = 'applicant-grid';
             applicantsBySlot[slot].forEach(app => {
@@ -136,22 +137,32 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    /**
-     * ⭐ [จุดแก้ไขที่ 2]
-     * เพิ่มลิงก์ PDF เข้าไปใน Modal
-     */
-    const showScoringModal = (applicantId) => {
+    // --- [ ⭐️ ตรรกะหลักที่แก้ไข ⭐️ ] ---
+    // (เปลี่ยนชื่อจาก showScoringModal เป็น showScoringDetails)
+    const showScoringDetails = (applicantId, clickedCardElement) => {
         const applicant = allData.find(a => a.id === applicantId);
         if (!applicant) return;
 
-        modalBody.innerHTML = `
+        // (1. ไฮไลต์ Card ที่เลือก)
+        // ลบ active class ออกจาก card อื่นๆ ก่อน
+        document.querySelectorAll('.info-card.active-card').forEach(card => {
+            card.classList.remove('active-card');
+        });
+        // เพิ่ม active class ให้ card ที่เพิ่งคลิก
+        if (clickedCardElement) {
+            clickedCardElement.classList.add('active-card');
+        }
+
+        // (2. อัปเดตเนื้อหาใน Pane ด้านขวา)
+        // (แทนที่ modalBody.innerHTML)
+        scoringViewBody.innerHTML = ` 
             <h2>${applicant.firstName} ${applicant.lastName} (${applicant.nickname})</h2>
             <div class="applicant-details">
                 <p><strong>อีเมล:</strong> ${applicant.email}</p>
                 <p><strong>เบอร์โทร:</strong> ${applicant.phone}</p>
                 <p><strong>Line ID:</strong> ${applicant.contactLine}</p>
                 <p><strong>ติดต่อสำรอง:</strong> ${applicant.contactOther}</p>
-                <p><strong>รอบสัมภาษณ์:</strong> ${applicant.interviewSlot}</p>
+                <p><strong>รอบสัมภาษณ์:</strong> ${applicant.interviewSlotOriginal}</p>
                 <p><a href="${applicant.applicationUrl}" target="_blank" rel="noopener noreferrer">ดูใบสมัคร (PDF)</a></p>
             </div>
             <hr>
@@ -168,8 +179,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button type="submit">บันทึกคะแนน</button>
             </form>
         `;
-        scoringModal.classList.remove('hidden');
+        
+        // (3. ลบตรรกะการเปิด Modal)
+        // scoringModal.classList.remove('hidden'); (ลบ)
     };
+    // --- [ ⭐️ จบ ⭐️ ] ---
+
 
     // --- Event Listeners ---
     confirmTableBtn.addEventListener('click', () => {
@@ -187,6 +202,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     populateDateFilter();
                 }
                 renderApplicantCards();
+
+                // ⭐️ [เพิ่ม] เคลียร์ฟอร์มด้านขวาเมื่อข้อมูลโหลดใหม่ ⭐️
+                scoringViewBody.innerHTML = '<p class="placeholder-text">กรุณาเลือก "ดูรายละเอียด" จากผู้สมัครด้านซ้าย</p>';
             });
         }
     });
@@ -200,21 +218,21 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     interviewDateFilter.addEventListener('change', renderApplicantCards);
+    
+    // ⭐️ [แก้ไข] Event Listener นี้จะเรียกฟังก์ชันใหม่ ⭐️
     cardsContainer.addEventListener('click', (e) => {
         if (e.target.classList.contains('view-details-btn')) {
             const card = e.target.closest('.info-card');
             const applicantId = parseInt(card.dataset.applicantId, 10);
-            showScoringModal(applicantId);
+            showScoringDetails(applicantId, card); // ส่ง 'card' ไปด้วยเพื่อไฮไลต์
         }
     });
 
-    scoringModal.addEventListener('click', (e) => {
-        if (e.target === scoringModal || e.target.classList.contains('modal-close-btn')) {
-            scoringModal.classList.add('hidden');
-        }
-    });
+    // ⭐️ [ลบ] Event Listener ของ Modal ทิ้ง ⭐️
+    // scoringModal.addEventListener('click', (e) => { ... });
 
-    modalBody.addEventListener('change', (e) => {
+    // ⭐️ [แก้ไข] เปลี่ยน Event Listener จาก modalBody เป็น scoringViewBody ⭐️
+    scoringViewBody.addEventListener('change', (e) => {
         if (e.target.classList.contains('score-select')) {
             const select = e.target;
             select.className = 'score-select'; 
@@ -223,7 +241,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    modalBody.addEventListener('submit', (e) => {
+    // ⭐️ [แก้ไข] เปลี่ยน Event Listener จาก modalBody เป็น scoringViewBody ⭐️
+    scoringViewBody.addEventListener('submit', (e) => {
         if (e.target.id === 'scoring-form') {
             e.preventDefault();
             const applicantId = parseInt(e.target.dataset.id, 10);
@@ -236,7 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const notes = document.getElementById('notes').value;
             Database.updateApplicant(applicantId, { scores, notes });
             alert('บันทึกคะแนนเรียบร้อย!');
-            scoringModal.classList.add('hidden');
+            
         }
     });
 });

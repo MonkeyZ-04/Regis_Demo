@@ -1,4 +1,4 @@
-// staff.js (เวอร์ชันอัปเดตล่าสุด)
+// staff.js (เวอร์ชันอัปเดต - แก้บั๊ก Pop-up + ใช้ English Key)
 
 document.addEventListener('DOMContentLoaded', () => {
     try {
@@ -24,78 +24,38 @@ document.addEventListener('DOMContentLoaded', () => {
         let allData = [];
         let draggedApplicantId = null;
 
-        // --- Functions ---
-        const generateTimeSlots = (startStr, endStr, intervalMinutes) => {
-            const slots = [];
-            const [startHour, startMinute] = startStr.split(':').map(Number);
-            const [endHour, endMinute] = endStr.split(':').map(Number);
-            let d = new Date();
-            d.setHours(startHour, startMinute, 0, 0);
-            const endDate = new Date();
-            endDate.setHours(endHour, endMinute, 0, 0);
-            while (d <= endDate) {
-                const hourStr = String(d.getHours()).padStart(2, '0');
-                const minuteStr = String(d.getMinutes()).padStart(2, '0');
-                slots.push(`${hourStr}:${minuteStr}`);
-                d.setMinutes(d.getMinutes() + intervalMinutes);
-            }
-            return slots;
+        // Map สำหรับแปลง Key ภาษาอังกฤษกลับเป็นไทยเพื่อแสดงผล
+        const DATE_DISPLAY_MAP = {
+            "2025-10-22": "วันที่ 22 ตุลาคม",
+            "2025-10-24": "วันที่ 24 ตุลาคม",
+            "RESERVE": "เวลาสำรอง"
         };
-
-        /**
-         * ⭐ [จุดแก้ไขที่ 1]
-         * แก้ไขให้มองหา "ตุลาคม" และแก้ "วันที" ที่สะกดผิดเป็น "วันที่"
-         */
-        const parseDateTime = (slotString) => {
-            if (!slotString) return { date: null, time: null, fullDate: null };
-            
-            // 1. มองหา "ตุลาคม" และรองรับ "วันที" (ที่สะกดผิด)
-            const dateMatch = slotString.match(/(วันที่|วันที) \d+ ตุลาคม/);
-            // 2. แปลง "วันที" -> "วันที่" อัตโนมัติ (ถ้าคุณแก้ db.json แล้ว ส่วนนี้ก็จะไม่ทำงาน ซึ่งปลอดภัยครับ)
-            const datePart = dateMatch ? dateMatch[0].replace('วันที', 'วันที่') : null; 
-            
-            const timeMatch = slotString.match(/(\d{2}[.:]\d{2})/);
-            const timePart = timeMatch ? timeMatch[0] : null;
-            let fullDate = null;
-            
-            if (datePart && timePart) {
-                const day = parseInt(datePart.match(/\d+/)[0], 10);
-                const [hour, minute] = timePart.split(/[.:]/).map(Number);
-                const now = new Date();
-                // 3. เปลี่ยนเลขเดือนจาก 2 (มี.ค.) เป็น 9 (ต.ค.)
-                fullDate = new Date(now.getFullYear(), 9, day, hour, minute); 
-            }
-            return { date: datePart, time: timePart, fullDate: fullDate };
-        };
+        
+        // (ฟังก์ชัน parseDateTime ไม่จำเป็นต้องใช้แล้ว)
 
         const renderTimeslotDashboard = () => {
-            const selectedDate = dateFilter.value;
+            const selectedDate = dateFilter.value; // e.g., "2025-10-22"
             if (!selectedDate) {
                 timeslotDashboard.innerHTML = '<p>กรุณาเลือกวันเพื่อแสดงตาราง</p>';
                 return;
             }
             
-            const dataTimes = [...new Set(
-                allData
-                    .map(app => app.interviewSlot)
-                    .filter(Boolean)
-                    .filter(slot => slot.includes(selectedDate))
-                    .map(slot => {
-                        const parsedTime = parseDateTime(slot).time;
-                        return parsedTime ? parsedTime.replace('.', ':') : null;
-                    })
-            )].filter(Boolean);
+            // Hardcode เวลาตามที่ผู้ใช้ระบุ
+            const sortedTimes = [
+                '16:30', '16:50', '17:10', '17:30', '17:50', '18:10', 
+                '18:30', '19:00', '19:20', '19:40', '20:00', '20:20'
+            ];
 
-            const generatedTimes = generateTimeSlots('16:40', '19:40', 20);
-            const allTimesSet = new Set([...dataTimes, ...generatedTimes]);
-            const sortedTimes = Array.from(allTimesSet).sort();
             const tables = Array.from({ length: 8 }, (_, i) => i + 1);
             const now = new Date();
 
             let tableHTML = '<table><thead><tr><th>โต๊ะ \\ เวลา</th>';
             sortedTimes.forEach(time => {
-                const { fullDate } = parseDateTime(`${selectedDate} ${time}`);
-                const endTime = fullDate ? new Date(fullDate.getTime() + 20 * 60000) : null;
+                const dateParts = selectedDate.split('-').map(Number); // [2025, 10, 22]
+                const timeParts = time.split(':').map(Number); // [16, 30]
+                const fullDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2], timeParts[0], timeParts[1]);
+                
+                const endTime = fullDate ? new Date(fullDate.getTime() + 15 * 60000) : null; 
                 const isCurrentSlot = fullDate && now >= fullDate && now < endTime;
                 tableHTML += `<th class="${isCurrentSlot ? 'current-slot-header' : ''}">${time}</th>`;
             });
@@ -103,17 +63,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
             tables.forEach(tableNum => {
                 tableHTML += `<tr><td><strong>โต๊ะ ${tableNum}</strong></td>`;
-                sortedTimes.forEach(time => {
-                    const timePattern = time.replace(':', '[.:]');
-                    const slotStartPattern = `${selectedDate} ${timePattern}`;
+                sortedTimes.forEach(time => { // time คือ "16:30"
+                    
+                    // ตรรกะการค้นหาผู้สมัคร (ใช้ English Key)
                     const applicant = allData.find(app =>
                         app.table === tableNum &&
-                        app.interviewSlot &&
-                        new RegExp(slotStartPattern).test(app.interviewSlot)
+                        app.interviewDate === selectedDate && 
+                        app.interviewTime === time           
                     );
 
-                    const slotForCell = applicant ? applicant.interviewSlot : `${selectedDate} ${time}`;
-                    const cellAttributes = `data-table="${tableNum}" data-slot="${slotForCell}"`;
+                    // แก้ data attribute สำหรับลากวาง
+                    const cellAttributes = `data-table="${tableNum}" data-time="${time}" data-date="${selectedDate}"`;
+                    
                     if (applicant) {
                         const statusClass = applicant.status === 'Arrived' ? 'arrived-in-table' : '';
                         tableHTML += `<td class="busy ${statusClass}" ${cellAttributes} data-applicant-id="${applicant.id}" draggable="true">${applicant.nickname}</td>`;
@@ -133,21 +94,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const searchTerm = searchBox.value.toLowerCase();
             const selectedSlot = filterSlot.value;
             const selectedStatus = filterStatus.value;
+            
             const filteredData = allData.filter(app => {
                 const matchesSearch = (app.firstName?.toLowerCase().includes(searchTerm) || app.lastName?.toLowerCase().includes(searchTerm) || app.nickname?.toLowerCase().includes(searchTerm) || app.faculty?.toLowerCase().includes(searchTerm));
-                const matchesSlot = selectedSlot === 'all' || app.interviewSlot === selectedSlot;
+                const matchesSlot = selectedSlot === 'all' || app.interviewSlotOriginal === selectedSlot;
                 const matchesStatus = selectedStatus === 'all' || app.status === selectedStatus;
                 return matchesSearch && matchesSlot && matchesStatus;
             });
 
             filteredData.forEach(app => {
-                const currentDate = parseDateTime(app.interviewSlot).date;
-                // สร้าง dropdown วันที่ (ถ้า allDates มีข้อมูล)
+                const currentDateKey = app.interviewDate;
+                
                 const dateOptions = allDates.length > 0 ? 
-                    allDates.map(date => 
-                        `<option value="${date}" ${date === currentDate ? 'selected' : ''}>${date}</option>`
+                    allDates.map(dateKey => // dateKey คือ "2025-10-22"
+                        `<option value="${dateKey}" ${dateKey === currentDateKey ? 'selected' : ''}>${DATE_DISPLAY_MAP[dateKey] || dateKey}</option>`
                     ).join('') : 
-                    `<option value="">${currentDate || 'N/A'}</option>`; // กรณีฉุกเฉิน
+                    `<option value="">${DATE_DISPLAY_MAP[currentDateKey] || 'N/A'}</option>`;
 
                 const card = document.createElement('div');
                 card.className = `staff-card ${app.status.toLowerCase()}`;
@@ -157,7 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="card-main-info">
                         <h4>${app.firstName} ${app.lastName} (${app.nickname})</h4>
                         <p>${app.faculty} - ${app.year}</p>
-                        <p class="interview-slot">รอบ: ${app.interviewSlot}</p>
+                        <p class="interview-slot">รอบ: ${app.interviewSlotOriginal}</p>
                     </div>
                     <div class="card-actions">
                         <div class="action-item">
@@ -177,31 +139,27 @@ document.addEventListener('DOMContentLoaded', () => {
             arrivedCountEl.textContent = allData.filter(a => a.status === 'Arrived').length;
         };
 
-        /**
-         * ⭐ [จุดแก้ไขที่ 2]
-         * เพิ่ม logic ให้เลือกวันที่แรกใน dropdown อัตโนมัติ
-         */
         const populateFilters = (allDates) => {
-            const dates = allDates;
+            const dates = allDates.filter(d => d !== 'RESERVE');
+
             const currentValDate = dateFilter.value;
-            dateFilter.innerHTML = ''; // ล้างค่าเก่า
-            dates.forEach(date => {
+            dateFilter.innerHTML = ''; 
+            
+            dates.forEach(dateKey => {
                 const option = document.createElement('option');
-                option.value = date;
-                option.textContent = date;
+                option.value = dateKey; // "2025-10-22"
+                option.textContent = DATE_DISPLAY_MAP[dateKey] || dateKey; // "วันที่ 22 ตุลาคม"
                 dateFilter.appendChild(option);
             });
             
-            // --- แก้ไขตรงนี้ ---
             if (currentValDate && dates.includes(currentValDate)) {
                 dateFilter.value = currentValDate;
             } 
             else if (dates.length > 0) {
-                dateFilter.value = dates[0]; // เลือกวันที่อันแรกในลิสต์ให้เลย
+                dateFilter.value = dates[0]; 
             }
-            // ------------------
             
-            const slots = [...new Set(allData.map(app => app.interviewSlot))].filter(Boolean).sort();
+            const slots = [...new Set(allData.map(app => app.interviewSlotOriginal))].filter(Boolean).sort();
             const currentValSlot = filterSlot.value;
             while (filterSlot.options.length > 1) filterSlot.remove(1);
             slots.forEach(slot => {
@@ -213,10 +171,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if(currentValSlot) filterSlot.value = currentValSlot;
         };
 
-        /**
-         * ⭐ [จุดแก้ไขที่ 3]
-         * เพิ่ม logic สำหรับ .date-select-dropdown (ฟีเจอร์ย้ายวันที่)
-         */
         const handleAction = (e) => {
             const card = e.target.closest('.staff-card');
             if (!card) return;
@@ -232,25 +186,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 Database.updateApplicant(id, { table: parseInt(e.target.value, 10) });
             }
             
-            // --- เพิ่มส่วนนี้สำหรับย้ายวันที่ ---
             if (e.target.classList.contains('date-select-dropdown')) {
-                const newDate = e.target.value;
+                const newDateKey = e.target.value; // e.g., "2025-10-24"
                 const applicant = allData.find(app => app.id === id);
                 
-                if (applicant && applicant.interviewSlot) {
-                    const { time } = parseDateTime(applicant.interviewSlot); // ดึงเวลาเดิมออกมา
-                    if (time) {
-                        // สร้าง slot ใหม่โดยใช้วันที่ใหม่ + เวลาเดิม
-                        const newSlot = `${newDate} ${time}`;
-                        Database.updateApplicant(id, { interviewSlot: newSlot });
-                    } else {
-                        console.warn(`Applicant ${id} has no time part in their slot "${applicant.interviewSlot}". Cannot update date.`);
+                if (applicant) {
+                    const newDateDisplay = DATE_DISPLAY_MAP[newDateKey] || newDateKey; // "วันที่ 24 ตุลาคม"
+                    
+                    let timePart = applicant.interviewTime || ''; // "16:30"
+                    
+                    const timeMatch = applicant.interviewSlotOriginal.match(/(\d{2}[.:]\d{2}\s*-\s*\d{2}[.:]\d{2}\s*น\.)/);
+                    if (timeMatch) {
+                        timePart = timeMatch[0]; // "16.30 - 16.45 น."
+                    } else if (timePart) {
+                         timePart = timePart.replace(':', '.'); // "16.30"
+                    } else if (applicant.interviewDate === 'RESERVE') {
+                        timePart = ''; 
                     }
+
+                    const newOriginalSlot = `${newDateDisplay} ${timePart}`.trim();
+
+                    Database.updateApplicant(id, { 
+                        interviewDate: newDateKey, 
+                        interviewSlotOriginal: newOriginalSlot 
+                    });
                 }
             }
-            // ------------------------------
         };
 
+        // ⭐️ [จุดที่แก้ไข] แก้บั๊ก lastName ⭐️
         const showApplicantModal = (applicantId) => {
             const applicant = allData.find(app => app.id === applicantId);
             if (!applicant) return;
@@ -261,12 +225,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 <p><strong>เบอร์โทร:</strong> ${applicant.phone}</p>
                 <p><strong>ช่องทางติดต่อ:</strong> ${applicant.contactOther || applicant.contactLine || 'ไม่มีข้อมูล'}</p>
             `;
-            staffInfoModal.classList.remove('hidden');
+            staffInfoModal.classList.remove('hidden'); // บรรทัดนี้จะทำงานได้แล้ว
         }
         
         // --- Event Listeners ---
-        // (แก้ไขให้ส่ง allDates ไปด้วย)
-        const getDates = () => [...new Set(allData.map(app => parseDateTime(app.interviewSlot).date))].filter(Boolean);
+        const getDates = () => [...new Set(allData.map(app => app.interviewDate))].filter(Boolean);
+        
         searchBox.addEventListener('input', () => renderCheckinBoard(getDates()));
         filterSlot.addEventListener('change', () => renderCheckinBoard(getDates()));
         filterStatus.addEventListener('change', () => renderCheckinBoard(getDates()));
@@ -277,9 +241,15 @@ document.addEventListener('DOMContentLoaded', () => {
         staffInfoModal.addEventListener('click', (e) => {
             if (e.target === staffInfoModal || e.target.classList.contains('modal-close-btn')) staffInfoModal.classList.add('hidden');
         });
+        
+        // Event Listener สำหรับ Pop-up (อันนี้ถูกต้องอยู่แล้ว)
         timeslotDashboard.addEventListener('click', (e) => {
-            if (e.target.classList.contains('busy')) showApplicantModal(parseInt(e.target.dataset.applicantId, 10));
+            if (e.target.classList.contains('busy')) {
+                showApplicantModal(parseInt(e.target.dataset.applicantId, 10));
+            }
         });
+
+        // (ตรรกะ Drag-Drop)
         timeslotDashboard.addEventListener('dragstart', (e) => {
             if (e.target.classList.contains('busy')) {
                 draggedApplicantId = parseInt(e.target.dataset.applicantId, 10);
@@ -300,30 +270,48 @@ document.addEventListener('DOMContentLoaded', () => {
             if (targetCell) {
                 targetCell.classList.remove('drag-over');
                 if (targetCell.classList.contains('busy')) return alert('ไม่สามารถย้ายไปยังช่องที่มีผู้สมัครอื่นอยู่แล้วได้');
+                
                 const newTable = parseInt(targetCell.dataset.table, 10);
-                const newSlot = targetCell.dataset.slot;
-                if (draggedApplicantId && newTable && newSlot) {
-                    Database.updateApplicant(draggedApplicantId, { table: newTable, interviewSlot: newSlot });
+                const newTime = targetCell.dataset.time; // "17:10"
+                const newDateKey = targetCell.dataset.date; // "2025-10-22"
+                
+                if (draggedApplicantId && newTable && newTime && newDateKey) {
+                    const newDateDisplay = DATE_DISPLAY_MAP[newDateKey] || newDateKey;
+                    
+                    const [hour, minute] = newTime.split(':').map(Number);
+                    const dateParts = newDateKey.split('-').map(Number);
+                    const startDate = new Date(dateParts[0], dateParts[1]-1, dateParts[2], hour, minute);
+                    const endDate = new Date(startDate.getTime() + 15 * 60000);
+                    const newTimeDisplay = `${newTime.replace(':', '.')} - ${String(endDate.getHours()).padStart(2, '0')}.${String(endDate.getMinutes()).padStart(2, '0')} น.`;
+                    
+                    const newOriginalSlot = `${newDateDisplay} ${newTimeDisplay}`;
+
+                    Database.updateApplicant(draggedApplicantId, {
+                        table: newTable,
+                        interviewDate: newDateKey,
+                        interviewTime: newTime,
+                        interviewSlotOriginal: newOriginalSlot
+                    });
                 }
                 draggedApplicantId = null;
             }
         });
 
-        // --- Real-time Listener (แก้ไข) ---
+
+        // --- Real-time Listener ---
         console.log("[staff.js] กำลังรอรับข้อมูล...");
         Database.onDataChange(newData => {
             console.log(`[staff.js] ได้รับข้อมูลใหม่! มีทั้งหมด: ${newData.length} รายการ`);
             
-            allData = newData;
-
-            const allDates = [...new Set(allData.map(app => parseDateTime(app.interviewSlot).date))].filter(Boolean);
+            allData = newData; 
+            const allDates = [...new Set(allData.map(app => app.interviewDate))].filter(Boolean);
             
             populateFilters(allDates);
             renderCheckinBoard(allDates);
-            renderTimeslotDashboard(); // <--- เรียก render ตารางหลักด้วย
+            renderTimeslotDashboard();
         });
         
-        setInterval(renderTimeslotDashboard, 30000);
+        setInterval(renderTimeslotDashboard, 30000); 
 
     } catch (error) {
         console.error("เกิดข้อผิดพลาดร้ายแรงใน staff.js:", error);

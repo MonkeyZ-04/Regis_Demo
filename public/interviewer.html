@@ -33,17 +33,22 @@
                     <button id="back-to-selection-btn">กลับไปเลือกโต๊ะ</button>
                 </div>
             </header>
-            <div id="applicant-cards-container">
-            </div>
-        </div>
+            
+            <div id="interviewer-main-content" class="split-container">
+                
+                <div id="applicant-cards-container" class="split-pane-list">
+                    </div>
+                
+                <div id="scoring-view" class="split-pane-details">
+                    <div id="scoring-view-body">
+                        <p class="placeholder-text">กรุณาเลือก "ดูรายละเอียด" จากผู้สมัครด้านซ้าย</p>
+                    </div>
+                </div>
 
-        <div id="scoring-modal" class="modal-backdrop hidden">
-            <div class="modal-content">
-                <button class="modal-close-btn">&times;</button>
-                <div id="modal-body"></div>
             </div>
+            </div>
+
         </div>
-    </div>
 
     <script src="data.js"></script>
     <script src="interviewer.js"></script>
