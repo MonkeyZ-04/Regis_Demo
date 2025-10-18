@@ -1,4 +1,4 @@
-// interviewer.js (เวอร์ชันแก้ไข Scoring Form)
+// interviewer.js (เวอร์ชันอัปเดตล่าสุด)
 
 document.addEventListener('DOMContentLoaded', () => {
     // Elements
@@ -25,15 +25,18 @@ document.addEventListener('DOMContentLoaded', () => {
         return timeMatch ? timeMatch[1] : slotString;
     };
 
+    /**
+     * ⭐ [จุดแก้ไขที่ 1]
+     * แก้ไขให้มองหา "ตุลาคม" และแก้ "วันที" ที่สะกดผิดเป็น "วันที่"
+     */
     const parseDateFromSlot = (slotString) => {
         if (!slotString) return null;
-        // 1. แก้ไข: มองหา "ตุลาคม" และรองรับ "วันที" (ที่สะกดผิด)
+        // 1. มองหา "ตุลาคม" และรองรับ "วันที" (ที่สะกดผิด)
         const dateMatch = slotString.match(/(วันที่|วันที) \d+ ตุลาคม/);
-        // 2. แก้ไข: แปลง "วันที" -> "วันที่" อัตโนมัติ
+        // 2. แปลง "วันที" -> "วันที่" อัตโนมัติ
         return dateMatch ? dateMatch[0].replace('วันที', 'วันที่') : null;
     };
 
-    // --- ⭐ [ใหม่] ฟังก์ชันสำหรับสร้าง Dropdown คะแนน ---
     const createScoreDropdown = (id, label, currentValue) => {
         const scoreOptions = [
             { value: 0, class: 'score-0' },
@@ -48,7 +51,6 @@ document.addEventListener('DOMContentLoaded', () => {
             `<option value="${opt.value}" class="${opt.class}" ${opt.value === currentValue ? 'selected' : ''}>${opt.value}</option>`
         ).join('');
 
-        // หา class สีที่ถูกต้องสำหรับค่าปัจจุบันเพื่อกำหนดให้ select ตอนเริ่มต้น
         const initialClass = scoreOptions.find(opt => opt.value === currentValue)?.class || 'score-1';
 
         return `
@@ -73,13 +75,26 @@ document.addEventListener('DOMContentLoaded', () => {
             option.textContent = date;
             interviewDateFilter.appendChild(option);
         });
-        if(currentVal && dates.includes(currentVal)) interviewDateFilter.value = currentVal;
+        
+        // --- เพิ่ม logic เลือกวันแรกอัตโนมัติ ---
+        if(currentVal && dates.includes(currentVal)) {
+             interviewDateFilter.value = currentVal;
+        } else if (dates.length > 0) {
+            interviewDateFilter.value = dates[0];
+        }
+        // ---------------------------------
     };
 
     const renderApplicantCards = () => {
         if (!currentTable) return;
         cardsContainer.innerHTML = '';
         const selectedDate = interviewDateFilter.value;
+        
+        if (!selectedDate) {
+             cardsContainer.innerHTML = '<p>กรุณาเลือกวันสัมภาษณ์</p>';
+             return;
+        }
+        
         const applicantsForTableAndDate = allData.filter(app =>
             app.table === currentTable && parseDateFromSlot(app.interviewSlot) === selectedDate
         );
@@ -121,7 +136,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // --- ⭐ [แก้ไข] ฟังก์ชันแสดง Modal ให้ใช้ Dropdown ---
+    /**
+     * ⭐ [จุดแก้ไขที่ 2]
+     * เพิ่มลิงก์ PDF เข้าไปใน Modal
+     */
     const showScoringModal = (applicantId) => {
         const applicant = allData.find(a => a.id === applicantId);
         if (!applicant) return;
@@ -134,7 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <p><strong>Line ID:</strong> ${applicant.contactLine}</p>
                 <p><strong>ติดต่อสำรอง:</strong> ${applicant.contactOther}</p>
                 <p><strong>รอบสัมภาษณ์:</strong> ${applicant.interviewSlot}</p>
-                <p><a href="${applicant.applicationUrl}" target="_blank">ดูใบสมัคร (PDF)</a></p>
+                <p><a href="${applicant.applicationUrl}" target="_blank" rel="noopener noreferrer">ดูใบสมัคร (PDF)</a></p>
             </div>
             <hr>
             <h3>ให้คะแนน (0-5)</h3>
@@ -196,20 +214,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- ⭐ [แก้ไข] Listener 2 ตัวสำหรับ Modal ---
-    // 1. Listener สำหรับเปลี่ยนสี Dropdown เมื่อเลือกค่าใหม่
     modalBody.addEventListener('change', (e) => {
         if (e.target.classList.contains('score-select')) {
             const select = e.target;
-            // ลบ class สีเก่าทั้งหมดออก
             select.className = 'score-select'; 
-            // เพิ่ม class สีใหม่จาก option ที่ถูกเลือก
             const selectedOption = select.options[select.selectedIndex];
             select.classList.add(selectedOption.classList[0]);
         }
     });
 
-    // 2. Listener สำหรับบันทึกคะแนน (อ่านค่าจาก select แทน input)
     modalBody.addEventListener('submit', (e) => {
         if (e.target.id === 'scoring-form') {
             e.preventDefault();

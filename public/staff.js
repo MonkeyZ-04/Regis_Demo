@@ -1,4 +1,4 @@
-// staff.js (เวอร์ชันแก้ไข เพิ่ม dropdown เปลี่ยนวันที่)
+// staff.js (เวอร์ชันอัปเดตล่าสุด)
 
 document.addEventListener('DOMContentLoaded', () => {
     try {
@@ -42,12 +42,16 @@ document.addEventListener('DOMContentLoaded', () => {
             return slots;
         };
 
+        /**
+         * ⭐ [จุดแก้ไขที่ 1]
+         * แก้ไขให้มองหา "ตุลาคม" และแก้ "วันที" ที่สะกดผิดเป็น "วันที่"
+         */
         const parseDateTime = (slotString) => {
             if (!slotString) return { date: null, time: null, fullDate: null };
             
-            // 1. แก้ไข: มองหา "ตุลาคม" และรองรับ "วันที" (ที่สะกดผิด)
+            // 1. มองหา "ตุลาคม" และรองรับ "วันที" (ที่สะกดผิด)
             const dateMatch = slotString.match(/(วันที่|วันที) \d+ ตุลาคม/);
-            // 2. แก้ไข: แปลง "วันที" -> "วันที่" อัตโนมัติ
+            // 2. แปลง "วันที" -> "วันที่" อัตโนมัติ (ถ้าคุณแก้ db.json แล้ว ส่วนนี้ก็จะไม่ทำงาน ซึ่งปลอดภัยครับ)
             const datePart = dateMatch ? dateMatch[0].replace('วันที', 'วันที่') : null; 
             
             const timeMatch = slotString.match(/(\d{2}[.:]\d{2})/);
@@ -58,6 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const day = parseInt(datePart.match(/\d+/)[0], 10);
                 const [hour, minute] = timePart.split(/[.:]/).map(Number);
                 const now = new Date();
+                // 3. เปลี่ยนเลขเดือนจาก 2 (มี.ค.) เป็น 9 (ต.ค.)
                 fullDate = new Date(now.getFullYear(), 9, day, hour, minute); 
             }
             return { date: datePart, time: timePart, fullDate: fullDate };
@@ -70,8 +75,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             
-            // --- จุดที่แก้ไข ---
-            // 1. ดึงเวลาจากข้อมูล และ "แปลง" รูปแบบให้เป็น HH:MM ทั้งหมด
             const dataTimes = [...new Set(
                 allData
                     .map(app => app.interviewSlot)
@@ -79,7 +82,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     .filter(slot => slot.includes(selectedDate))
                     .map(slot => {
                         const parsedTime = parseDateTime(slot).time;
-                        // ถ้ามีเวลา และมีจุด "." ให้เปลี่ยนเป็น ":"
                         return parsedTime ? parsedTime.replace('.', ':') : null;
                     })
             )].filter(Boolean);
@@ -102,7 +104,6 @@ document.addEventListener('DOMContentLoaded', () => {
             tables.forEach(tableNum => {
                 tableHTML += `<tr><td><strong>โต๊ะ ${tableNum}</strong></td>`;
                 sortedTimes.forEach(time => {
-                    // แปลง time กลับไปเป็น regex pattern เพื่อให้หาได้ทั้ง HH:MM และ HH.MM
                     const timePattern = time.replace(':', '[.:]');
                     const slotStartPattern = `${selectedDate} ${timePattern}`;
                     const applicant = allData.find(app =>
@@ -126,10 +127,6 @@ document.addEventListener('DOMContentLoaded', () => {
             timeslotDashboard.innerHTML = tableHTML;
         };
 
-        /**
-         * ⭐ [แก้ไข] renderCheckinBoard
-         * รับ allDates มาเพื่อสร้าง dropdown
-         */
         const renderCheckinBoard = (allDates) => {
             pendingList.innerHTML = '';
             arrivedList.innerHTML = '';
@@ -144,17 +141,18 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             filteredData.forEach(app => {
-                // --- NEW: สร้าง HTML สำหรับ options วันที่ ---
                 const currentDate = parseDateTime(app.interviewSlot).date;
-                const dateOptions = allDates.map(date => 
-                    `<option value="${date}" ${date === currentDate ? 'selected' : ''}>${date}</option>`
-                ).join('');
+                // สร้าง dropdown วันที่ (ถ้า allDates มีข้อมูล)
+                const dateOptions = allDates.length > 0 ? 
+                    allDates.map(date => 
+                        `<option value="${date}" ${date === currentDate ? 'selected' : ''}>${date}</option>`
+                    ).join('') : 
+                    `<option value="">${currentDate || 'N/A'}</option>`; // กรณีฉุกเฉิน
 
                 const card = document.createElement('div');
                 card.className = `staff-card ${app.status.toLowerCase()}`;
                 card.dataset.id = app.id;
                 
-                // --- NEW: เพิ่ม date-select-dropdown เข้าไปใน HTML ---
                 card.innerHTML = `
                     <div class="card-main-info">
                         <h4>${app.firstName} ${app.lastName} (${app.nickname})</h4>
@@ -180,26 +178,29 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         /**
-         * ⭐ [แก้ไข] populateFilters
-         * รับ allDates มาจาก onDataChange
+         * ⭐ [จุดแก้ไขที่ 2]
+         * เพิ่ม logic ให้เลือกวันที่แรกใน dropdown อัตโนมัติ
          */
         const populateFilters = (allDates) => {
-            // const dates = [...new Set(allData.map(app => parseDateTime(app.interviewSlot).date))].filter(Boolean); // ถูกย้ายไป onDataChange
-            const dates = allDates; // ใช้ค่าที่ส่งเข้ามา
+            const dates = allDates;
             const currentValDate = dateFilter.value;
-            dateFilter.innerHTML = '';
+            dateFilter.innerHTML = ''; // ล้างค่าเก่า
             dates.forEach(date => {
                 const option = document.createElement('option');
                 option.value = date;
                 option.textContent = date;
                 dateFilter.appendChild(option);
             });
+            
+            // --- แก้ไขตรงนี้ ---
             if (currentValDate && dates.includes(currentValDate)) {
                 dateFilter.value = currentValDate;
             } 
             else if (dates.length > 0) {
-                dateFilter.value = dates[0]; 
+                dateFilter.value = dates[0]; // เลือกวันที่อันแรกในลิสต์ให้เลย
             }
+            // ------------------
+            
             const slots = [...new Set(allData.map(app => app.interviewSlot))].filter(Boolean).sort();
             const currentValSlot = filterSlot.value;
             while (filterSlot.options.length > 1) filterSlot.remove(1);
@@ -213,8 +214,8 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         /**
-         * ⭐ [แก้ไข] handleAction
-         * เพิ่ม logic สำหรับ .date-select-dropdown
+         * ⭐ [จุดแก้ไขที่ 3]
+         * เพิ่ม logic สำหรับ .date-select-dropdown (ฟีเจอร์ย้ายวันที่)
          */
         const handleAction = (e) => {
             const card = e.target.closest('.staff-card');
@@ -230,7 +231,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.target.classList.contains('table-select-dropdown')) {
                 Database.updateApplicant(id, { table: parseInt(e.target.value, 10) });
             }
-            // --- NEW: Logic สำหรับการเปลี่ยนวันที่ ---
+            
+            // --- เพิ่มส่วนนี้สำหรับย้ายวันที่ ---
             if (e.target.classList.contains('date-select-dropdown')) {
                 const newDate = e.target.value;
                 const applicant = allData.find(app => app.id === id);
@@ -242,11 +244,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         const newSlot = `${newDate} ${time}`;
                         Database.updateApplicant(id, { interviewSlot: newSlot });
                     } else {
-                        // กรณีที่ slot ไม่มีเวลา (ไม่ควรเกิดขึ้น แต่ป้องกันไว้)
                         console.warn(`Applicant ${id} has no time part in their slot "${applicant.interviewSlot}". Cannot update date.`);
                     }
                 }
             }
+            // ------------------------------
         };
 
         const showApplicantModal = (applicantId) => {
@@ -263,9 +265,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // --- Event Listeners ---
-        searchBox.addEventListener('input', () => renderCheckinBoard([...new Set(allData.map(app => parseDateTime(app.interviewSlot).date))].filter(Boolean))); // ต้องส่ง allDates ไปด้วย
-        filterSlot.addEventListener('change', () => renderCheckinBoard([...new Set(allData.map(app => parseDateTime(app.interviewSlot).date))].filter(Boolean))); // ต้องส่ง allDates ไปด้วย
-        filterStatus.addEventListener('change', () => renderCheckinBoard([...new Set(allData.map(app => parseDateTime(app.interviewSlot).date))].filter(Boolean))); // ต้องส่ง allDates ไปด้วย
+        // (แก้ไขให้ส่ง allDates ไปด้วย)
+        const getDates = () => [...new Set(allData.map(app => parseDateTime(app.interviewSlot).date))].filter(Boolean);
+        searchBox.addEventListener('input', () => renderCheckinBoard(getDates()));
+        filterSlot.addEventListener('change', () => renderCheckinBoard(getDates()));
+        filterStatus.addEventListener('change', () => renderCheckinBoard(getDates()));
         
         dateFilter.addEventListener('change', renderTimeslotDashboard);
         document.querySelector('.staff-board').addEventListener('click', handleAction);
@@ -305,23 +309,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        /**
-         * ⭐ [แก้ไข] Real-time Listener
-         * ดึง allDates ออกมาก่อน แล้วส่งต่อไปยังฟังก์ชันลูก
-         */
+        // --- Real-time Listener (แก้ไข) ---
         console.log("[staff.js] กำลังรอรับข้อมูล...");
         Database.onDataChange(newData => {
             console.log(`[staff.js] ได้รับข้อมูลใหม่! มีทั้งหมด: ${newData.length} รายการ`);
             
             allData = newData;
 
-            // --- NEW: ดึงวันที่ทั้งหมดออกมาก่อน ---
             const allDates = [...new Set(allData.map(app => parseDateTime(app.interviewSlot).date))].filter(Boolean);
             
-            // ส่ง allDates ไปให้ฟังก์ชันที่เกี่ยวข้อง
             populateFilters(allDates);
             renderCheckinBoard(allDates);
-            renderTimeslotDashboard();
+            renderTimeslotDashboard(); // <--- เรียก render ตารางหลักด้วย
         });
         
         setInterval(renderTimeslotDashboard, 30000);
