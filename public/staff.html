@@ -16,7 +16,7 @@
                 <h2>ตารางสรุปสถานะโต๊ะตามรอบเวลา</h2>
                 <div class="date-switch" id="date-switch-container">
                      <label>
-                        <input type="radio" name="date-select" value="วันที่ 22 ตุลาคม" checked>
+                        <input type="radio" name="date-select" value="วันที่ 22 ตุลาคม">
                         <span>วันที่ 22</span>
                     </label>
                     <label>
@@ -47,7 +47,7 @@
         <div class="staff-board" style="grid-template-columns: 1fr 1fr 1fr;">
             <div class="board-column">
                 <div class="column-header pending-header">
-                    <h2>รอเช็กอิน (<span id="pending-count">0</span>)</h2>
+                    <h2 class="staff-list">รอเช็กอิน (<span id="pending-count">0</span>)</h2>
                 </div>
                 <div id="pending-list" class="applicant-list">
                 </div>
@@ -55,7 +55,7 @@
 
             <div class="board-column">
                 <div class="column-header arrived-header">
-                    <h2>มาถึงแล้ว (<span id="arrived-count">0</span>)</h2>
+                    <h2 class="staff-list">มาถึงแล้ว (<span id="arrived-count">0</span>)</h2>
                 </div>
                 <div id="arrived-list" class="applicant-list">
                 </div>
@@ -63,7 +63,7 @@
 
             <div class="board-column">
                 <div class="column-header online-header">
-                    <h2>Online (<span id="online-count">0</span>)</h2>
+                    <h2 class="staff-list">Online (<span id="online-count">0</span>)</h2>
                 </div>
                 <div id="online-list" class="applicant-list">
                 </div>

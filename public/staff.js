@@ -1,4 +1,4 @@
-// staff.js (เวอร์ชันอัปเดต: ใช้ Date Switch แทน Dropdown)
+// staff.js (เวอร์ชันอัปเดต: แก้ไขบั๊ก Filter + ไม่สนใจ Date Switcher บน Board)
 
 document.addEventListener('DOMContentLoaded', () => {
     try {
@@ -13,14 +13,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const filterSlot = document.getElementById('filter-slot');
         const filterStatus = document.getElementById('filter-status');
         const timeslotDashboard = document.getElementById('timeslot-dashboard');
-        // --- [ ⭐️ แก้ไข ⭐️ ] ---
-        // เปลี่ยนจาก dateFilter (select) เป็น dateSwitchContainer (div)
         const dateSwitchContainer = document.getElementById('date-switch-container');
-        // --- [ ⭐️ จบ ⭐️ ] ---
         const staffInfoModal = document.getElementById('staff-info-modal');
         const staffModalBody = document.getElementById('staff-modal-body');
 
-        // ตรวจสอบ Element สำคัญ (ใช้ dateSwitchContainer แทน dateFilter)
         if (!pendingList || !arrivedList || !onlineList || !dateSwitchContainer) {
             console.error("Critical elements are missing from the page. Aborting script.");
             return;
@@ -29,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // --- State ---
         let allData = [];
         let draggedApplicantId = null;
-        let availableDates = []; // เก็บวันที่ทั้งหมดที่มี
+        let availableDates = [];
 
         // --- Functions ---
         const generateTimeSlots = (startStr, endStr, intervalMinutes) => {
@@ -65,19 +61,16 @@ document.addEventListener('DOMContentLoaded', () => {
             return { date: datePart, time: timePart, fullDate: fullDate };
         };
 
-        // --- [ ⭐️ ใหม่ ⭐️ ] ---
-        // ฟังก์ชันสำหรับอ่านค่าวันที่ที่ถูกเลือกจาก Radio Buttons
         const getSelectedDate = () => {
             const checkedRadio = dateSwitchContainer.querySelector('input[name="date-select"]:checked');
             return checkedRadio ? checkedRadio.value : null;
         };
-        // --- [ ⭐️ จบ ⭐️ ] ---
 
+        // ================================================
+        // [ ⭐️⭐️⭐️ (Dashboard: ยังคงสนใจ Date Switcher) ⭐️⭐️⭐️ ]
+        // ================================================
         const renderTimeslotDashboard = () => {
-            // --- [ ⭐️ แก้ไข ⭐️ ] ---
-            // อ่านค่าวันที่จาก getSelectedDate() แทน dateFilter.value
             const selectedDate = getSelectedDate();
-            // --- [ ⭐️ จบ ⭐️ ] ---
             if (!selectedDate) {
                 timeslotDashboard.innerHTML = '<p>กรุณาเลือกวันเพื่อแสดงตาราง</p>';
                 return;
@@ -85,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const dataTimes = [...new Set(
                 allData
-                    .filter(app => !app.Online)
+                    .filter(app => !app.Online) 
                     .map(app => app.interviewSlot)
                     .filter(Boolean)
                     .filter(slot => slot.includes(selectedDate))
@@ -118,8 +111,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 sortedTimes.forEach(time => {
                     const timePattern = time.replace(':', '[.:]');
                     const slotStartPattern = `${selectedDate}.*${timePattern}`;
+                    
                     const applicant = allData.find(app =>
-                        !app.Online &&
                         app.table === tableNum &&
                         app.interviewSlot &&
                         new RegExp(slotStartPattern, 'i').test(app.interviewSlot)
@@ -128,8 +121,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     const slotForCell = applicant ? applicant.interviewSlot : `${selectedDate} ${time}`;
                     const cellAttributes = `data-table="${tableNum}" data-slot="${slotForCell}"`;
                     if (applicant) {
-                        const statusClass = applicant.status === 'Arrived' ? 'arrived-in-table' : '';
-                        tableHTML += `<td class="busy ${statusClass}" ${cellAttributes} data-applicant-id="${applicant.id}" draggable="true">${applicant.nickname}</td>`;
+                        let statusClass = '';
+                        if (applicant.Online) {
+                            statusClass = 'online-in-table'; // 👈 คลาสสีม่วง
+                        } else if (applicant.status === 'Arrived') {
+                            statusClass = 'arrived-in-table';
+                        }
+                        
+                        tableHTML += `<td class="busy ${statusClass}" ${cellAttributes} data-applicant-id="${applicant.id}" draggable="true">${applicant.nickname} ${applicant.Online ? '⭐️' : ''}</td>`;
                     } else {
                         tableHTML += `<td class="available" ${cellAttributes}>ว่าง</td>`;
                     }
@@ -140,41 +139,40 @@ document.addEventListener('DOMContentLoaded', () => {
             timeslotDashboard.innerHTML = tableHTML;
         };
 
-        const renderCheckinBoard = () => { // ไม่ต้องรับ allDates แล้ว เพราะจะกรองตาม selectedDate ทีหลัง
+        // ================================================
+        // [ ⭐️⭐️⭐️ โค้ดที่แก้ไข (Board: ไม่สนใจ Date Switcher) ⭐️⭐️⭐️ ]
+        // ================================================
+        const renderCheckinBoard = () => {
             pendingList.innerHTML = '';
             arrivedList.innerHTML = '';
             onlineList.innerHTML = '';
+            
+            // --- 1. ดึงค่า Filter 3 ตัวบน ---
             const searchTerm = searchBox.value.toLowerCase();
             const selectedSlot = filterSlot.value;
             const selectedStatus = filterStatus.value;
-            // --- [ ⭐️ แก้ไข ⭐️ ] ---
-            // อ่านค่าวันที่จาก getSelectedDate()
-            const selectedDate = getSelectedDate();
-            // --- [ ⭐️ จบ ⭐️ ] ---
+            // const selectedDate = getSelectedDate(); // 👈 [ตามคำขอ] ไม่สนใจตัวนี้
 
-            // กรองข้อมูลตาม selectedDate ก่อน ถ้ามีค่า (Online ไม่ต้องกรอง)
-            const dateFilteredData = selectedDate ?
-                allData.filter(app => app.Online || (parseDateTime(app.interviewSlot).date === selectedDate))
-                : allData; // ถ้าไม่มี selectedDate ก็แสดงทั้งหมด (ไม่ควรเกิดขึ้นกับ radio)
-
-            // กรองข้อมูลตาม Search, Slot, Status
-            const filteredData = dateFilteredData.filter(app => {
+            // --- 2. กรองข้อมูลจาก allData โดยตรง (ไม่สนใจวันที่) ---
+            const filteredData = allData.filter(app => {
                 const nameFacultyMatch = `${app.firstName} ${app.lastName} ${app.nickname} ${app.faculty}`.toLowerCase();
                 const matchesSearch = nameFacultyMatch.includes(searchTerm);
 
                 const slotToCompare = app.Online ? 'Online Special' : app.interviewSlot;
-                const matchesSlot = selectedSlot === 'all' || slotToCompare === selectedSlot || (app.Online && selectedSlot === 'Online Special');
+                const matchesSlot = selectedSlot === 'all' || slotToCompare === selectedSlot;
 
                 const statusToCompare = app.Online ? 'Online' : app.status;
+                
+                // ⭐️ [ แก้ไขบั๊กบรรทัดนี้ ] ⭐️
                 const matchesStatus = selectedStatus === 'all' || statusToCompare === selectedStatus;
+                // ⭐️ [ จบการแก้ไข ] ⭐️
 
                 return matchesSearch && matchesSlot && matchesStatus;
             });
 
-            // สร้าง Card และแยกใส่ List (เหมือนเดิม)
+            // --- 3. สร้าง Card และแยกใส่ List ---
             filteredData.forEach(app => {
                 const currentDate = parseDateTime(app.interviewSlot).date;
-                // ใช้ availableDates ที่เก็บไว้ตอน populateFilters
                 const dateOptions = availableDates.length > 0 ?
                     availableDates.map(date =>
                         `<option value="${date}" ${date === currentDate ? 'selected' : ''}>${date || 'N/A'}</option>`
@@ -216,25 +214,41 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            // อัปเดตการนับจำนวน (เหมือนเดิม)
+            // --- 4. อัปเดตการนับจำนวน (นับจาก allData เหมือนเดิม) ---
             pendingCountEl.textContent = allData.filter(a => !a.Online && a.status === 'Pending').length;
             arrivedCountEl.textContent = allData.filter(a => !a.Online && a.status === 'Arrived').length;
             onlineCountEl.textContent = allData.filter(a => a.Online).length;
         };
+        // ================================================
+        // [ ⭐️⭐️⭐️ (populateFilters: ยังคงเลือกวันอัตโนมัติ) ⭐️⭐️⭐️ ]
+        // ================================================
 
-        const populateFilters = () => { // ไม่ต้องรับ allDates แล้ว
-            // --- [ ⭐️ แก้ไข ⭐️ ] ---
-            // ดึงวันที่จาก allData มาเก็บไว้ใน availableDates
+        const populateFilters = () => {
             availableDates = [...new Set(allData.filter(a => !a.Online).map(app => parseDateTime(app.interviewSlot).date))].filter(Boolean);
-            // ไม่ต้องสร้าง options ให้ dateFilter แล้ว
-            // ตรวจสอบว่ามี radio button ที่ checked หรือไม่ ถ้าไม่มีให้ check อันแรก
-            if (!dateSwitchContainer.querySelector('input[name="date-select"]:checked') && availableDates.length > 0) {
+            
+            // --- [ ⭐️ ตรรกะ (เลือกวันอัตโนมัติ) ⭐️ ] ---
+            // (เรายังคงทำสิ่งนี้ เพื่อให้ Dashboard ทำงานถูกต้อง)
+            let isAnyRadioChecked = dateSwitchContainer.querySelector('input[name="date-select"]:checked');
+            
+            if (!isAnyRadioChecked && availableDates.length > 0) {
+                const firstDateWithValue = availableDates[0]; 
+                const radioToSelect = dateSwitchContainer.querySelector(`input[name="date-select"][value="${firstDateWithValue}"]`);
+                
+                if (radioToSelect) {
+                    radioToSelect.checked = true; // 👈 เลือกวันที่มีข้อมูล (เช่น "วันที่ 24") อัตโนมัติ
+                } else {
+                    const firstRadio = dateSwitchContainer.querySelector('input[name="date-select"]');
+                    if (firstRadio) firstRadio.checked = true;
+                }
+            } else if (!isAnyRadioChecked && availableDates.length === 0) {
+                 // ถ้าไม่มีข้อมูลเลย ก็เลือกปุ่มแรก
                  const firstRadio = dateSwitchContainer.querySelector('input[name="date-select"]');
                  if (firstRadio) firstRadio.checked = true;
             }
-            // --- [ ⭐️ จบ ⭐️ ] ---
+            // --- [ ⭐️ จบตรรกะ ⭐️ ] ---
 
-            // Populate Filter Slot และ Status (เหมือนเดิม)
+
+            // (ส่วนนี้เหมือนเดิม)
             const slots = [...new Set(allData.filter(a => !a.Online).map(app => app.interviewSlot))].filter(Boolean).sort();
             const currentValSlot = filterSlot.value;
             while (filterSlot.options.length > 1) filterSlot.remove(1);
@@ -261,7 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         const handleAction = (e) => {
-            // (โค้ดส่วนนี้เหมือนเดิม)
+            // (เหมือนเดิม)
             const card = e.target.closest('.staff-card');
             if (!card) return;
             const id = parseInt(card.dataset.id, 10);
@@ -295,7 +309,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         const showApplicantModal = (applicantId) => {
-            // (โค้ดส่วนนี้เหมือนเดิม)
+            // (เหมือนเดิม)
             const applicant = allData.find(app => app.id === applicantId);
             if (!applicant) return;
             staffModalBody.innerHTML = `
@@ -310,21 +324,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // --- Event Listeners ---
-        // (ลบ getDates() ออก ไม่ต้องส่ง date ไป renderCheckinBoard แล้ว)
+        // (เหมือนเดิม)
         searchBox.addEventListener('input', renderCheckinBoard);
         filterSlot.addEventListener('change', renderCheckinBoard);
         filterStatus.addEventListener('change', renderCheckinBoard);
 
-        // --- [ ⭐️ แก้ไข ⭐️ ] ---
-        // เปลี่ยน Event Listener จาก dateFilter เป็น dateSwitchContainer
+        // (Date Switcher จะมีผลแค่กับ Dashboard)
         dateSwitchContainer.addEventListener('change', (e) => {
              if (e.target.type === 'radio' && e.target.name === 'date-select') {
                  console.log("Date switched to:", e.target.value);
-                 renderTimeslotDashboard(); // อัปเดตตาราง
-                 renderCheckinBoard();     // อัปเดตบอร์ด
+                 renderTimeslotDashboard(); // 👈 อัปเดตตาราง
+                 // renderCheckinBoard();     // 👈 ไม่ต้องเรียกก็ได้ เพราะ Board ไม่สนใจ
              }
         });
-        // --- [ ⭐️ จบ ⭐️ ] ---
 
         document.querySelector('.staff-board').addEventListener('click', handleAction);
         document.querySelector('.staff-board').addEventListener('change', handleAction);
@@ -344,12 +356,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (targetCell && targetCell.dataset.applicantId) {
                 draggedApplicantId = parseInt(targetCell.dataset.applicantId, 10);
                  const applicant = allData.find(app => app.id === draggedApplicantId);
-                 if (applicant && applicant.Online) {
-                     e.preventDefault();
-                     draggedApplicantId = null;
-                     console.warn("Cannot drag Online applicant.");
-                     return;
-                 }
                 e.dataTransfer.setData('text/plain', draggedApplicantId);
                 setTimeout(() => targetCell.classList.add('dragging'), 0);
             } else {
@@ -373,10 +379,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!targetCell.classList.contains('available')) return alert('ไม่สามารถย้ายไปยังช่องที่มีผู้สมัครอื่นอยู่แล้วได้');
 
                 const newTable = parseInt(targetCell.dataset.table, 10);
-                // --- [ ⭐️ แก้ไข ⭐️ ] ---
-                // อ่านวันที่จาก getSelectedDate() แทน dateFilter.value
                 const newDate = getSelectedDate();
-                // --- [ ⭐️ จบ ⭐️ ] ---
                 const newTimeMatch = targetCell.dataset.slot.match(/(\d{2}[.:]\d{2})/);
                 const newTime = newTimeMatch ? newTimeMatch[0] : null;
 
@@ -396,9 +399,10 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log(`[staff.js] ได้รับข้อมูลใหม่! มีทั้งหมด: ${newData.length} รายการ`);
             allData = newData;
 
-            populateFilters();       // สร้าง Filter ต่างๆ (รวมถึงเช็ค radio button)
-            renderCheckinBoard();    // แสดงผล Board ตามวันที่เลือก (หรือวันแรก)
-            renderTimeslotDashboard(); // แสดงผลตารางตามวันที่เลือก (หรือวันแรก)
+            // (แก้ลำดับการเรียก)
+            populateFilters();       // 👈 1. เรียก populateFilters ก่อน เพื่อให้มันไปติ๊กวันที่ถูกต้อง
+            renderCheckinBoard();    // 👈 2. เรียก renderCheckinBoard ทีหลัง
+            renderTimeslotDashboard(); // 👈 3. เรียก renderTimeslotDashboard ทีหลัง
         });
 
     } catch (error) {

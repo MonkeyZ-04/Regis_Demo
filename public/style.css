@@ -178,6 +178,7 @@ button:hover { background-color: #f0f0f0; }
     border: 1px solid #ddd; border-radius: 5px;
 }
 .staff-board { display: grid; gap: 20px; } /* columns กำหนดใน HTML */
+.staff-list{ color: rgb(226, 219, 219); }
 .board-column .column-header {
     padding: 10px 15px; border-radius: 8px 8px 0 0; color: white; margin-bottom: 10px;
 }
@@ -311,7 +312,7 @@ header div { display: flex; gap: 10px; }
 .score-5 { background-color: #d1ecf1; color: #0c5460; }
 
 /* Online Column Styles */
-.column-header.online-header { background-color: #6f42c1; }
+.column-header.online-header { background-color: #6f42c1;}
 .staff-card.online { border-left-color: #6f42c1; background-color: #f3eefc; }
 .staff-card.online .action-item button, .staff-card.online .action-item select { display: none; }
 .staff-card.online .action-item p { width: 100%; margin-top: 10px; }
@@ -369,4 +370,9 @@ header div { display: flex; gap: 10px; }
     color: #155724;
     font-weight: bold;
 }
-/* ------------------------ */
+/* ⭐️ [เพิ่ม CSS นี้เข้าไป] สำหรับ Goal 4 ⭐️ */
+#timeslot-dashboard td.online-in-table { 
+    background-color: #e3daf3; /* สีม่วงอ่อน */
+    font-weight: bold; 
+    border: 1px dashed #6f42c1; /* เส้นประสีม่วง */
+}
