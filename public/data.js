@@ -68,8 +68,8 @@ const Database = {
 
                 applicantsBySlot[thaiSlot].push({
                     id: index + 1,
-                    timestamp: row['ประทับเวลา'],
-                    email: row['ที่อยู่อีเมล'],
+                    timestamp: row['Timestamp'], // แก้ไข Key เป็น Timestamp
+                    email: row['Email Address'], // แก้ไข Key เป็น Email Address
                     prefix: row['คำนำหน้าชื่อ'],
                     firstName: row['ชื่อจริง'],
                     lastName: row['นามสกุล'],
@@ -80,6 +80,11 @@ const Database = {
                     contactLine: row['ช่องทางการติดต่อ (Line ID)'],
                     contactOther: row['ช่องทางการติดต่อสำรอง (IG, Facebook, นกพิราบสื่อสาร etc.)'],
                     applicationUrl: row['อัพโหลดใบสมัครไว้ตรงนี้จู้ (ไฟล์ pdf)'],
+                    interviewSlot: row['เลือกวันเวลาที่สะดวกสัมภาษณ์'],
+                    Online: row['Online'] || false, // <--- เพิ่มบรรทัดนี้ (|| false คือถ้าไม่มีค่า ให้เป็น false)
+                    status: 'Pending',
+                    scores: { passion: 0, teamwork: 0, attitude: 0, creativity: 0 },
+                    notes: '',
                     
                     // --- [ บล็อกข้อมูลใหม่ ] ---
                     interviewDate: parsedSlot.dateKey, // e.g., "2025-10-22"
@@ -97,11 +102,11 @@ const Database = {
             let initialData = [];
             for (const slot in applicantsBySlot) {
                 const applicants = applicantsBySlot[slot];
-                let tables = Array.from({ length: 8 }, (_, i) => i + 1); // สร้างโต๊ะ [1, 2, ..., 8]
+                let tables = Array.from({ length: 9 }, (_, i) => i + 1); 
                 shuffleArray(tables); // สลับลำดับโต๊ะ
 
                 applicants.forEach((applicant, index) => {
-                    applicant.table = tables[index % 8]; // วนใช้โต๊ะในกรณีที่คนเยอะกว่า 8
+                    applicant.table = tables[index % 9]; // วนใช้โต๊ะในกรณีที่คนเยอะกว่า 8
                     initialData.push(applicant);
                 });
             }
@@ -141,7 +146,6 @@ const Database = {
         
         const applicantsBySlot = {};
         allData.forEach(applicant => {
-            // ⭐️ [แก้ไข] จัดกลุ่มด้วย Key ใหม่ ⭐️
             const slotKey = applicant.interviewSlotOriginal || 'Unassigned';
             if (!applicantsBySlot[slotKey]) {
                 applicantsBySlot[slotKey] = [];
@@ -152,11 +156,11 @@ const Database = {
         let shuffledData = [];
         for (const slot in applicantsBySlot) {
             const applicants = applicantsBySlot[slot];
-            let tables = Array.from({ length: 8 }, (_, i) => i + 1);
+            let tables = Array.from({ length: 9 }, (_, i) => i + 1);
             shuffleArray(tables);
 
             applicants.forEach((applicant, index) => {
-                applicant.table = tables[index % 8];
+                applicant.table = tables[index % 9];
                 shuffledData.push(applicant);
             });
         }

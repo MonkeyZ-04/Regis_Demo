@@ -1,21 +1,27 @@
-// staff.js (เวอร์ชันอัปเดต - แก้บั๊ก Pop-up + ใช้ English Key)
+// staff.js (เวอร์ชันอัปเดต: ใช้ Date Switch แทน Dropdown)
 
 document.addEventListener('DOMContentLoaded', () => {
     try {
         // --- Elements ---
         const pendingList = document.getElementById('pending-list');
         const arrivedList = document.getElementById('arrived-list');
+        const onlineList = document.getElementById('online-list');
         const pendingCountEl = document.getElementById('pending-count');
         const arrivedCountEl = document.getElementById('arrived-count');
+        const onlineCountEl = document.getElementById('online-count');
         const searchBox = document.getElementById('search-box');
         const filterSlot = document.getElementById('filter-slot');
         const filterStatus = document.getElementById('filter-status');
         const timeslotDashboard = document.getElementById('timeslot-dashboard');
-        const dateFilter = document.getElementById('date-filter');
+        // --- [ ⭐️ แก้ไข ⭐️ ] ---
+        // เปลี่ยนจาก dateFilter (select) เป็น dateSwitchContainer (div)
+        const dateSwitchContainer = document.getElementById('date-switch-container');
+        // --- [ ⭐️ จบ ⭐️ ] ---
         const staffInfoModal = document.getElementById('staff-info-modal');
         const staffModalBody = document.getElementById('staff-modal-body');
 
-        if (!pendingList || !arrivedList || !dateFilter) {
+        // ตรวจสอบ Element สำคัญ (ใช้ dateSwitchContainer แทน dateFilter)
+        if (!pendingList || !arrivedList || !onlineList || !dateSwitchContainer) {
             console.error("Critical elements are missing from the page. Aborting script.");
             return;
         }
@@ -23,39 +29,85 @@ document.addEventListener('DOMContentLoaded', () => {
         // --- State ---
         let allData = [];
         let draggedApplicantId = null;
+        let availableDates = []; // เก็บวันที่ทั้งหมดที่มี
 
-        // Map สำหรับแปลง Key ภาษาอังกฤษกลับเป็นไทยเพื่อแสดงผล
-        const DATE_DISPLAY_MAP = {
-            "2025-10-22": "วันที่ 22 ตุลาคม",
-            "2025-10-24": "วันที่ 24 ตุลาคม",
-            "RESERVE": "เวลาสำรอง"
+        // --- Functions ---
+        const generateTimeSlots = (startStr, endStr, intervalMinutes) => {
+            const slots = [];
+            const [startHour, startMinute] = startStr.split(':').map(Number);
+            const [endHour, endMinute] = endStr.split(':').map(Number);
+            let d = new Date();
+            d.setHours(startHour, startMinute, 0, 0);
+            const endDate = new Date();
+            endDate.setHours(endHour, endMinute, 0, 0);
+            while (d <= endDate) {
+                const hourStr = String(d.getHours()).padStart(2, '0');
+                const minuteStr = String(d.getMinutes()).padStart(2, '0');
+                slots.push(`${hourStr}:${minuteStr}`);
+                d.setMinutes(d.getMinutes() + intervalMinutes);
+            }
+            return slots;
         };
-        
-        // (ฟังก์ชัน parseDateTime ไม่จำเป็นต้องใช้แล้ว)
+
+        const parseDateTime = (slotString) => {
+            if (!slotString) return { date: null, time: null, fullDate: null };
+            const dateMatch = slotString.match(/(วันที่|วันที) \d+ ตุลาคม/);
+            const datePart = dateMatch ? dateMatch[0].replace('วันที', 'วันที่') : null;
+            const timeMatch = slotString.match(/(\d{2}[.:]\d{2})/);
+            const timePart = timeMatch ? timeMatch[0] : null;
+            let fullDate = null;
+            if (datePart && timePart) {
+                const day = parseInt(datePart.match(/\d+/)[0], 10);
+                const [hour, minute] = timePart.split(/[.:]/).map(Number);
+                const now = new Date();
+                fullDate = new Date(now.getFullYear(), 9, day, hour, minute); // 9 = ตุลาคม
+            }
+            return { date: datePart, time: timePart, fullDate: fullDate };
+        };
+
+        // --- [ ⭐️ ใหม่ ⭐️ ] ---
+        // ฟังก์ชันสำหรับอ่านค่าวันที่ที่ถูกเลือกจาก Radio Buttons
+        const getSelectedDate = () => {
+            const checkedRadio = dateSwitchContainer.querySelector('input[name="date-select"]:checked');
+            return checkedRadio ? checkedRadio.value : null;
+        };
+        // --- [ ⭐️ จบ ⭐️ ] ---
 
         const renderTimeslotDashboard = () => {
-            const selectedDate = dateFilter.value; // e.g., "2025-10-22"
+            // --- [ ⭐️ แก้ไข ⭐️ ] ---
+            // อ่านค่าวันที่จาก getSelectedDate() แทน dateFilter.value
+            const selectedDate = getSelectedDate();
+            // --- [ ⭐️ จบ ⭐️ ] ---
             if (!selectedDate) {
                 timeslotDashboard.innerHTML = '<p>กรุณาเลือกวันเพื่อแสดงตาราง</p>';
                 return;
             }
-            
-            // Hardcode เวลาตามที่ผู้ใช้ระบุ
-            const sortedTimes = [
-                '16:30', '16:50', '17:10', '17:30', '17:50', '18:10', 
-                '18:30', '19:00', '19:20', '19:40', '20:00', '20:20'
-            ];
 
-            const tables = Array.from({ length: 8 }, (_, i) => i + 1);
+            const dataTimes = [...new Set(
+                allData
+                    .filter(app => !app.Online)
+                    .map(app => app.interviewSlot)
+                    .filter(Boolean)
+                    .filter(slot => slot.includes(selectedDate))
+                    .map(slot => {
+                        const parsedTime = parseDateTime(slot).time;
+                        return parsedTime ? parsedTime.replace('.', ':') : null;
+                    })
+            )].filter(Boolean);
+
+            const generatedTimes = generateTimeSlots('16:30', '20:30', 20);
+            const allTimesSet = new Set([...dataTimes, ...generatedTimes]);
+            const excludedTimes = ['18:50', '19:10', '19:30', '19:50', '20:10', '20:30'];
+            const sortedTimes = Array.from(allTimesSet)
+                              .sort((a,b) => a.localeCompare(b))
+                              .filter(time => !excludedTimes.includes(time)); 
+            const tables = Array.from({ length: 9 }, (_, i) => i + 1);
             const now = new Date();
 
             let tableHTML = '<table><thead><tr><th>โต๊ะ \\ เวลา</th>';
             sortedTimes.forEach(time => {
-                const dateParts = selectedDate.split('-').map(Number); // [2025, 10, 22]
-                const timeParts = time.split(':').map(Number); // [16, 30]
-                const fullDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2], timeParts[0], timeParts[1]);
-                
-                const endTime = fullDate ? new Date(fullDate.getTime() + 15 * 60000) : null; 
+                const { fullDate } = parseDateTime(`${selectedDate} ${time}`);
+                const endTime = fullDate ? new Date(fullDate.getTime() + 20 * 60000) : null;
                 const isCurrentSlot = fullDate && now >= fullDate && now < endTime;
                 tableHTML += `<th class="${isCurrentSlot ? 'current-slot-header' : ''}">${time}</th>`;
             });
@@ -63,18 +115,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
             tables.forEach(tableNum => {
                 tableHTML += `<tr><td><strong>โต๊ะ ${tableNum}</strong></td>`;
-                sortedTimes.forEach(time => { // time คือ "16:30"
-                    
-                    // ตรรกะการค้นหาผู้สมัคร (ใช้ English Key)
+                sortedTimes.forEach(time => {
+                    const timePattern = time.replace(':', '[.:]');
+                    const slotStartPattern = `${selectedDate}.*${timePattern}`;
                     const applicant = allData.find(app =>
+                        !app.Online &&
                         app.table === tableNum &&
-                        app.interviewDate === selectedDate && 
-                        app.interviewTime === time           
+                        app.interviewSlot &&
+                        new RegExp(slotStartPattern, 'i').test(app.interviewSlot)
                     );
 
-                    // แก้ data attribute สำหรับลากวาง
-                    const cellAttributes = `data-table="${tableNum}" data-time="${time}" data-date="${selectedDate}"`;
-                    
+                    const slotForCell = applicant ? applicant.interviewSlot : `${selectedDate} ${time}`;
+                    const cellAttributes = `data-table="${tableNum}" data-slot="${slotForCell}"`;
                     if (applicant) {
                         const statusClass = applicant.status === 'Arrived' ? 'arrived-in-table' : '';
                         tableHTML += `<td class="busy ${statusClass}" ${cellAttributes} data-applicant-id="${applicant.id}" draggable="true">${applicant.nickname}</td>`;
@@ -88,94 +140,137 @@ document.addEventListener('DOMContentLoaded', () => {
             timeslotDashboard.innerHTML = tableHTML;
         };
 
-        const renderCheckinBoard = (allDates) => {
+        const renderCheckinBoard = () => { // ไม่ต้องรับ allDates แล้ว เพราะจะกรองตาม selectedDate ทีหลัง
             pendingList.innerHTML = '';
             arrivedList.innerHTML = '';
+            onlineList.innerHTML = '';
             const searchTerm = searchBox.value.toLowerCase();
             const selectedSlot = filterSlot.value;
             const selectedStatus = filterStatus.value;
-            
-            const filteredData = allData.filter(app => {
-                const matchesSearch = (app.firstName?.toLowerCase().includes(searchTerm) || app.lastName?.toLowerCase().includes(searchTerm) || app.nickname?.toLowerCase().includes(searchTerm) || app.faculty?.toLowerCase().includes(searchTerm));
-                const matchesSlot = selectedSlot === 'all' || app.interviewSlotOriginal === selectedSlot;
-                const matchesStatus = selectedStatus === 'all' || app.status === selectedStatus;
+            // --- [ ⭐️ แก้ไข ⭐️ ] ---
+            // อ่านค่าวันที่จาก getSelectedDate()
+            const selectedDate = getSelectedDate();
+            // --- [ ⭐️ จบ ⭐️ ] ---
+
+            // กรองข้อมูลตาม selectedDate ก่อน ถ้ามีค่า (Online ไม่ต้องกรอง)
+            const dateFilteredData = selectedDate ?
+                allData.filter(app => app.Online || (parseDateTime(app.interviewSlot).date === selectedDate))
+                : allData; // ถ้าไม่มี selectedDate ก็แสดงทั้งหมด (ไม่ควรเกิดขึ้นกับ radio)
+
+            // กรองข้อมูลตาม Search, Slot, Status
+            const filteredData = dateFilteredData.filter(app => {
+                const nameFacultyMatch = `${app.firstName} ${app.lastName} ${app.nickname} ${app.faculty}`.toLowerCase();
+                const matchesSearch = nameFacultyMatch.includes(searchTerm);
+
+                const slotToCompare = app.Online ? 'Online Special' : app.interviewSlot;
+                const matchesSlot = selectedSlot === 'all' || slotToCompare === selectedSlot || (app.Online && selectedSlot === 'Online Special');
+
+                const statusToCompare = app.Online ? 'Online' : app.status;
+                const matchesStatus = selectedStatus === 'all' || statusToCompare === selectedStatus;
+
                 return matchesSearch && matchesSlot && matchesStatus;
             });
 
+            // สร้าง Card และแยกใส่ List (เหมือนเดิม)
             filteredData.forEach(app => {
-                const currentDateKey = app.interviewDate;
-                
-                const dateOptions = allDates.length > 0 ? 
-                    allDates.map(dateKey => // dateKey คือ "2025-10-22"
-                        `<option value="${dateKey}" ${dateKey === currentDateKey ? 'selected' : ''}>${DATE_DISPLAY_MAP[dateKey] || dateKey}</option>`
-                    ).join('') : 
-                    `<option value="">${DATE_DISPLAY_MAP[currentDateKey] || 'N/A'}</option>`;
+                const currentDate = parseDateTime(app.interviewSlot).date;
+                // ใช้ availableDates ที่เก็บไว้ตอน populateFilters
+                const dateOptions = availableDates.length > 0 ?
+                    availableDates.map(date =>
+                        `<option value="${date}" ${date === currentDate ? 'selected' : ''}>${date || 'N/A'}</option>`
+                    ).join('') :
+                    `<option value="">${currentDate || 'N/A'}</option>`;
 
                 const card = document.createElement('div');
-                card.className = `staff-card ${app.status.toLowerCase()}`;
+                card.className = `staff-card ${app.Online ? 'online' : app.status.toLowerCase()}`;
                 card.dataset.id = app.id;
-                
+                const displaySlot = app.Online ? 'Online Special' : (app.interviewSlot || 'ยังไม่กำหนดรอบ');
+
                 card.innerHTML = `
                     <div class="card-main-info">
-                        <h4>${app.firstName} ${app.lastName} (${app.nickname})</h4>
+                        <h4>${app.firstName} ${app.lastName} (${app.nickname}) ${app.Online ? '⭐️' : ''}</h4>
                         <p>${app.faculty} - ${app.year}</p>
-                        <p class="interview-slot">รอบ: ${app.interviewSlotOriginal}</p>
+                        <p class="interview-slot">รอบ: ${displaySlot}</p>
                     </div>
                     <div class="card-actions">
+                        ${!app.Online ? `
                         <div class="action-item">
                             <label>วันที่:</label>
                             <select class="date-select-dropdown">${dateOptions}</select>
                         </div>
                         <div class="action-item">
                             <label>โต๊ะ:</label>
-                            <select class="table-select-dropdown">${[1,2,3,4,5,6,7,8].map(n => `<option value="${n}" ${n === app.table ? 'selected' : ''}>${n}</option>`).join('')}</select>
-                        </div>
-                        <div class="action-item">${app.status === 'Pending' ? `<button class="check-in-btn">Check-in</button>` : `<button class="undo-check-in-btn">ยกเลิก Check-in</button>`}</div>
+                            <select class="table-select-dropdown">${[1,2,3,4,5,6,7,8,9].map(n => `<option value="${n}" ${n === app.table ? 'selected' : ''}>${n}</option>`).join('')}</select>
+                        </div>` : '<p style="font-size: 12px; color: purple; text-align: right;"><i>Online Interview</i></p>'
+                        }
+                        <div class="action-item">${!app.Online && app.status === 'Pending' ? `<button class="check-in-btn">Check-in</button>` : ''}</div>
+                        <div class="action-item">${!app.Online && app.status === 'Arrived' ? `<button class="undo-check-in-btn">ยกเลิก Check-in</button>` : ''}</div>
                     </div>`;
-                if (app.status === 'Pending') pendingList.appendChild(card);
-                else arrivedList.appendChild(card);
+
+                if (app.Online) {
+                    onlineList.appendChild(card);
+                } else if (app.status === 'Pending') {
+                    pendingList.appendChild(card);
+                } else {
+                    arrivedList.appendChild(card);
+                }
             });
-            pendingCountEl.textContent = allData.filter(a => a.status === 'Pending').length;
-            arrivedCountEl.textContent = allData.filter(a => a.status === 'Arrived').length;
+
+            // อัปเดตการนับจำนวน (เหมือนเดิม)
+            pendingCountEl.textContent = allData.filter(a => !a.Online && a.status === 'Pending').length;
+            arrivedCountEl.textContent = allData.filter(a => !a.Online && a.status === 'Arrived').length;
+            onlineCountEl.textContent = allData.filter(a => a.Online).length;
         };
 
-        const populateFilters = (allDates) => {
-            const dates = allDates.filter(d => d !== 'RESERVE');
-
-            const currentValDate = dateFilter.value;
-            dateFilter.innerHTML = ''; 
-            
-            dates.forEach(dateKey => {
-                const option = document.createElement('option');
-                option.value = dateKey; // "2025-10-22"
-                option.textContent = DATE_DISPLAY_MAP[dateKey] || dateKey; // "วันที่ 22 ตุลาคม"
-                dateFilter.appendChild(option);
-            });
-            
-            if (currentValDate && dates.includes(currentValDate)) {
-                dateFilter.value = currentValDate;
-            } 
-            else if (dates.length > 0) {
-                dateFilter.value = dates[0]; 
+        const populateFilters = () => { // ไม่ต้องรับ allDates แล้ว
+            // --- [ ⭐️ แก้ไข ⭐️ ] ---
+            // ดึงวันที่จาก allData มาเก็บไว้ใน availableDates
+            availableDates = [...new Set(allData.filter(a => !a.Online).map(app => parseDateTime(app.interviewSlot).date))].filter(Boolean);
+            // ไม่ต้องสร้าง options ให้ dateFilter แล้ว
+            // ตรวจสอบว่ามี radio button ที่ checked หรือไม่ ถ้าไม่มีให้ check อันแรก
+            if (!dateSwitchContainer.querySelector('input[name="date-select"]:checked') && availableDates.length > 0) {
+                 const firstRadio = dateSwitchContainer.querySelector('input[name="date-select"]');
+                 if (firstRadio) firstRadio.checked = true;
             }
-            
-            const slots = [...new Set(allData.map(app => app.interviewSlotOriginal))].filter(Boolean).sort();
+            // --- [ ⭐️ จบ ⭐️ ] ---
+
+            // Populate Filter Slot และ Status (เหมือนเดิม)
+            const slots = [...new Set(allData.filter(a => !a.Online).map(app => app.interviewSlot))].filter(Boolean).sort();
             const currentValSlot = filterSlot.value;
             while (filterSlot.options.length > 1) filterSlot.remove(1);
+            const onlineOptionSlot = document.createElement('option');
+            onlineOptionSlot.value = 'Online Special';
+            onlineOptionSlot.textContent = 'Online Special';
+            filterSlot.appendChild(onlineOptionSlot);
             slots.forEach(slot => {
                 const option = document.createElement('option');
                 option.value = slot;
                 option.textContent = slot;
                 filterSlot.appendChild(option);
             });
-            if(currentValSlot) filterSlot.value = currentValSlot;
+            if (currentValSlot) filterSlot.value = currentValSlot;
+
+            const currentValStatus = filterStatus.value;
+             if (!filterStatus.querySelector('option[value="Online"]')) {
+                 const onlineOptionStatus = document.createElement('option');
+                 onlineOptionStatus.value = 'Online';
+                 onlineOptionStatus.textContent = 'Online';
+                 filterStatus.appendChild(onlineOptionStatus);
+             }
+             if (currentValStatus) filterStatus.value = currentValStatus;
         };
 
         const handleAction = (e) => {
+            // (โค้ดส่วนนี้เหมือนเดิม)
             const card = e.target.closest('.staff-card');
             if (!card) return;
             const id = parseInt(card.dataset.id, 10);
+            const applicant = allData.find(app => app.id === id);
 
+            if (applicant && applicant.Online && (e.target.classList.contains('check-in-btn') || e.target.classList.contains('undo-check-in-btn') || e.target.classList.contains('table-select-dropdown') || e.target.classList.contains('date-select-dropdown'))) {
+                console.warn("Cannot modify Online applicant through standard actions.");
+                return;
+            }
             if (e.target.classList.contains('check-in-btn')) {
                 Database.updateApplicant(id, { status: 'Arrived' });
             }
@@ -185,83 +280,89 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.target.classList.contains('table-select-dropdown')) {
                 Database.updateApplicant(id, { table: parseInt(e.target.value, 10) });
             }
-            
             if (e.target.classList.contains('date-select-dropdown')) {
-                const newDateKey = e.target.value; // e.g., "2025-10-24"
-                const applicant = allData.find(app => app.id === id);
-                
-                if (applicant) {
-                    const newDateDisplay = DATE_DISPLAY_MAP[newDateKey] || newDateKey; // "วันที่ 24 ตุลาคม"
-                    
-                    let timePart = applicant.interviewTime || ''; // "16:30"
-                    
-                    const timeMatch = applicant.interviewSlotOriginal.match(/(\d{2}[.:]\d{2}\s*-\s*\d{2}[.:]\d{2}\s*น\.)/);
-                    if (timeMatch) {
-                        timePart = timeMatch[0]; // "16.30 - 16.45 น."
-                    } else if (timePart) {
-                         timePart = timePart.replace(':', '.'); // "16.30"
-                    } else if (applicant.interviewDate === 'RESERVE') {
-                        timePart = ''; 
+                const newDate = e.target.value;
+                if (applicant && applicant.interviewSlot) {
+                    const { time } = parseDateTime(applicant.interviewSlot);
+                    if (time) {
+                        const newSlot = `${newDate} ${time}`;
+                        Database.updateApplicant(id, { interviewSlot: newSlot });
+                    } else {
+                        console.warn(`Applicant ${id} has no time part in their slot "${applicant.interviewSlot}". Cannot update date.`);
                     }
-
-                    const newOriginalSlot = `${newDateDisplay} ${timePart}`.trim();
-
-                    Database.updateApplicant(id, { 
-                        interviewDate: newDateKey, 
-                        interviewSlotOriginal: newOriginalSlot 
-                    });
                 }
             }
         };
 
-        // ⭐️ [จุดที่แก้ไข] แก้บั๊ก lastName ⭐️
         const showApplicantModal = (applicantId) => {
+            // (โค้ดส่วนนี้เหมือนเดิม)
             const applicant = allData.find(app => app.id === applicantId);
             if (!applicant) return;
             staffModalBody.innerHTML = `
-                <h2>${applicant.nickname}</h2>
+                <h2>${applicant.nickname} ${applicant.Online ? '⭐️ (Online)' : ''}</h2>
                 <p><strong>ชื่อจริง-นามสกุล:</strong> ${applicant.prefix} ${applicant.firstName} ${applicant.lastName}</p>
                 <p><strong>คณะ:</strong> ${applicant.faculty} (${applicant.year})</p>
                 <p><strong>เบอร์โทร:</strong> ${applicant.phone}</p>
                 <p><strong>ช่องทางติดต่อ:</strong> ${applicant.contactOther || applicant.contactLine || 'ไม่มีข้อมูล'}</p>
+                <p><strong>รอบสัมภาษณ์:</strong> ${applicant.Online ? 'Online Special' : (applicant.interviewSlot || 'N/A')}</p>
             `;
-            staffInfoModal.classList.remove('hidden'); // บรรทัดนี้จะทำงานได้แล้ว
+            staffInfoModal.classList.remove('hidden');
         }
-        
+
         // --- Event Listeners ---
-        const getDates = () => [...new Set(allData.map(app => app.interviewDate))].filter(Boolean);
-        
-        searchBox.addEventListener('input', () => renderCheckinBoard(getDates()));
-        filterSlot.addEventListener('change', () => renderCheckinBoard(getDates()));
-        filterStatus.addEventListener('change', () => renderCheckinBoard(getDates()));
-        
-        dateFilter.addEventListener('change', renderTimeslotDashboard);
+        // (ลบ getDates() ออก ไม่ต้องส่ง date ไป renderCheckinBoard แล้ว)
+        searchBox.addEventListener('input', renderCheckinBoard);
+        filterSlot.addEventListener('change', renderCheckinBoard);
+        filterStatus.addEventListener('change', renderCheckinBoard);
+
+        // --- [ ⭐️ แก้ไข ⭐️ ] ---
+        // เปลี่ยน Event Listener จาก dateFilter เป็น dateSwitchContainer
+        dateSwitchContainer.addEventListener('change', (e) => {
+             if (e.target.type === 'radio' && e.target.name === 'date-select') {
+                 console.log("Date switched to:", e.target.value);
+                 renderTimeslotDashboard(); // อัปเดตตาราง
+                 renderCheckinBoard();     // อัปเดตบอร์ด
+             }
+        });
+        // --- [ ⭐️ จบ ⭐️ ] ---
+
         document.querySelector('.staff-board').addEventListener('click', handleAction);
         document.querySelector('.staff-board').addEventListener('change', handleAction);
         staffInfoModal.addEventListener('click', (e) => {
             if (e.target === staffInfoModal || e.target.classList.contains('modal-close-btn')) staffInfoModal.classList.add('hidden');
         });
-        
-        // Event Listener สำหรับ Pop-up (อันนี้ถูกต้องอยู่แล้ว)
         timeslotDashboard.addEventListener('click', (e) => {
-            if (e.target.classList.contains('busy')) {
-                showApplicantModal(parseInt(e.target.dataset.applicantId, 10));
-            }
+             const targetCell = e.target.closest('td.busy');
+             if (targetCell && targetCell.dataset.applicantId) {
+                showApplicantModal(parseInt(targetCell.dataset.applicantId, 10));
+             }
         });
 
-        // (ตรรกะ Drag-Drop)
+        // Drag and Drop listeners (เหมือนเดิม)
         timeslotDashboard.addEventListener('dragstart', (e) => {
-            if (e.target.classList.contains('busy')) {
-                draggedApplicantId = parseInt(e.target.dataset.applicantId, 10);
+            const targetCell = e.target.closest('td.busy');
+            if (targetCell && targetCell.dataset.applicantId) {
+                draggedApplicantId = parseInt(targetCell.dataset.applicantId, 10);
+                 const applicant = allData.find(app => app.id === draggedApplicantId);
+                 if (applicant && applicant.Online) {
+                     e.preventDefault();
+                     draggedApplicantId = null;
+                     console.warn("Cannot drag Online applicant.");
+                     return;
+                 }
                 e.dataTransfer.setData('text/plain', draggedApplicantId);
-                setTimeout(() => e.target.classList.add('dragging'), 0);
+                setTimeout(() => targetCell.classList.add('dragging'), 0);
+            } else {
+                 e.preventDefault();
             }
         });
-        timeslotDashboard.addEventListener('dragend', (e) => e.target.classList.remove('dragging'));
+        timeslotDashboard.addEventListener('dragend', (e) => e.target.closest('td')?.classList.remove('dragging'));
         timeslotDashboard.addEventListener('dragover', (e) => {
             e.preventDefault();
             const targetCell = e.target.closest('td');
-            if (targetCell && !targetCell.classList.contains('busy')) targetCell.classList.add('drag-over');
+            if (targetCell && targetCell.classList.contains('available')) {
+                targetCell.classList.add('drag-over');
+            }
         });
         timeslotDashboard.addEventListener('dragleave', (e) => e.target.closest('td')?.classList.remove('drag-over'));
         timeslotDashboard.addEventListener('drop', (e) => {
@@ -269,49 +370,36 @@ document.addEventListener('DOMContentLoaded', () => {
             const targetCell = e.target.closest('td');
             if (targetCell) {
                 targetCell.classList.remove('drag-over');
-                if (targetCell.classList.contains('busy')) return alert('ไม่สามารถย้ายไปยังช่องที่มีผู้สมัครอื่นอยู่แล้วได้');
-                
-                const newTable = parseInt(targetCell.dataset.table, 10);
-                const newTime = targetCell.dataset.time; // "17:10"
-                const newDateKey = targetCell.dataset.date; // "2025-10-22"
-                
-                if (draggedApplicantId && newTable && newTime && newDateKey) {
-                    const newDateDisplay = DATE_DISPLAY_MAP[newDateKey] || newDateKey;
-                    
-                    const [hour, minute] = newTime.split(':').map(Number);
-                    const dateParts = newDateKey.split('-').map(Number);
-                    const startDate = new Date(dateParts[0], dateParts[1]-1, dateParts[2], hour, minute);
-                    const endDate = new Date(startDate.getTime() + 15 * 60000);
-                    const newTimeDisplay = `${newTime.replace(':', '.')} - ${String(endDate.getHours()).padStart(2, '0')}.${String(endDate.getMinutes()).padStart(2, '0')} น.`;
-                    
-                    const newOriginalSlot = `${newDateDisplay} ${newTimeDisplay}`;
+                if (!targetCell.classList.contains('available')) return alert('ไม่สามารถย้ายไปยังช่องที่มีผู้สมัครอื่นอยู่แล้วได้');
 
-                    Database.updateApplicant(draggedApplicantId, {
-                        table: newTable,
-                        interviewDate: newDateKey,
-                        interviewTime: newTime,
-                        interviewSlotOriginal: newOriginalSlot
-                    });
+                const newTable = parseInt(targetCell.dataset.table, 10);
+                // --- [ ⭐️ แก้ไข ⭐️ ] ---
+                // อ่านวันที่จาก getSelectedDate() แทน dateFilter.value
+                const newDate = getSelectedDate();
+                // --- [ ⭐️ จบ ⭐️ ] ---
+                const newTimeMatch = targetCell.dataset.slot.match(/(\d{2}[.:]\d{2})/);
+                const newTime = newTimeMatch ? newTimeMatch[0] : null;
+
+                if (draggedApplicantId && newTable && newDate && newTime) {
+                    const newSlot = `${newDate} ${newTime}`;
+                    Database.updateApplicant(draggedApplicantId, { table: newTable, interviewSlot: newSlot });
+                } else {
+                    console.error("Drop failed: Missing data for update.", { draggedApplicantId, newTable, newDate, newTime });
                 }
                 draggedApplicantId = null;
             }
         });
 
-
-        // --- Real-time Listener ---
+        // --- Real-time Listener (ปรับปรุง) ---
         console.log("[staff.js] กำลังรอรับข้อมูล...");
         Database.onDataChange(newData => {
             console.log(`[staff.js] ได้รับข้อมูลใหม่! มีทั้งหมด: ${newData.length} รายการ`);
-            
-            allData = newData; 
-            const allDates = [...new Set(allData.map(app => app.interviewDate))].filter(Boolean);
-            
-            populateFilters(allDates);
-            renderCheckinBoard(allDates);
-            renderTimeslotDashboard();
+            allData = newData;
+
+            populateFilters();       // สร้าง Filter ต่างๆ (รวมถึงเช็ค radio button)
+            renderCheckinBoard();    // แสดงผล Board ตามวันที่เลือก (หรือวันแรก)
+            renderTimeslotDashboard(); // แสดงผลตารางตามวันที่เลือก (หรือวันแรก)
         });
-        
-        setInterval(renderTimeslotDashboard, 30000); 
 
     } catch (error) {
         console.error("เกิดข้อผิดพลาดร้ายแรงใน staff.js:", error);

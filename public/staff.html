@@ -14,9 +14,20 @@
         <div id="timeslot-dashboard-container" class="dashboard-container">
             <div class="dashboard-header">
                 <h2>ตารางสรุปสถานะโต๊ะตามรอบเวลา</h2>
-                <select id="date-filter"></select>
+                <div class="date-switch" id="date-switch-container">
+                     <label>
+                        <input type="radio" name="date-select" value="วันที่ 22 ตุลาคม" checked>
+                        <span>วันที่ 22</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="date-select" value="วันที่ 24 ตุลาคม">
+                        <span>วันที่ 24</span>
+                    </label>
+                </div>
             </div>
-            <div id="timeslot-dashboard"></div>
+            <div id="timeslot-dashboard">
+                <p>กำลังโหลดข้อมูลตาราง...</p>
+            </div>
         </div>
 
         <hr class="divider">
@@ -33,19 +44,29 @@
             </select>
         </div>
 
-        <div class="staff-board">
+        <div class="staff-board" style="grid-template-columns: 1fr 1fr 1fr;">
             <div class="board-column">
                 <div class="column-header pending-header">
                     <h2>รอเช็กอิน (<span id="pending-count">0</span>)</h2>
                 </div>
-                <div id="pending-list" class="applicant-list"></div>
+                <div id="pending-list" class="applicant-list">
+                </div>
             </div>
 
             <div class="board-column">
                 <div class="column-header arrived-header">
                     <h2>มาถึงแล้ว (<span id="arrived-count">0</span>)</h2>
                 </div>
-                <div id="arrived-list" class="applicant-list"></div>
+                <div id="arrived-list" class="applicant-list">
+                </div>
+            </div>
+
+            <div class="board-column">
+                <div class="column-header online-header">
+                    <h2>Online (<span id="online-count">0</span>)</h2>
+                </div>
+                <div id="online-list" class="applicant-list">
+                </div>
             </div>
         </div>
     </div>
@@ -53,10 +74,11 @@
     <div id="staff-info-modal" class="modal-backdrop hidden">
         <div class="modal-content">
             <button class="modal-close-btn">&times;</button>
-            <div id="staff-modal-body"></div>
+            <div id="staff-modal-body">
+            </div>
         </div>
     </div>
-  
+
     <script src="data.js"></script>
     <script src="staff.js"></script>
 </body>

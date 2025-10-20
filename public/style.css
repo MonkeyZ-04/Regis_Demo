@@ -11,7 +11,7 @@ body {
     border-radius: 8px;
     padding: 20px;
     margin: 0 auto;
-    max-width: 1200px;
+    max-width: 1300px; /* ขยาย max-width ให้พอดีกับ Layout ใหม่ */
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 header {
@@ -23,12 +23,15 @@ header {
     margin-bottom: 20px;
 }
 h1 { margin: 0; font-size: 24px; }
-button, select {
+h2 { font-size: 20px; margin-top: 25px; margin-bottom: 15px; color: #555; }
+h3 { font-size: 18px; margin-top: 20px; margin-bottom: 10px; color: #333;}
+button, select, input[type="text"] {
     padding: 8px 12px;
     font-size: 14px;
     border-radius: 5px;
     cursor: pointer;
     border: 1px solid #ccc;
+    box-sizing: border-box;
 }
 button:hover { background-color: #f0f0f0; }
 .hidden { display: none !important; }
@@ -36,83 +39,125 @@ button:hover { background-color: #f0f0f0; }
 /* Views */
 .view { padding: 10px; }
 .selection-box { text-align: center; padding: 50px; }
-.selection-box select { margin: 0 10px; }
+.selection-box select { margin: 0 10px; width: 200px; }
+.selection-box button { margin-top: 15px; }
 
 /* Cards */
 .applicant-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
+    grid-template-columns: 1fr; /* ให้แสดง 1 คอลัมน์ใน Pane ซ้าย */
+    gap: 10px; /* ลด gap */
 }
 .info-card, .applicant-card {
     background-color: white;
     border-radius: 8px;
-    padding: 15px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    padding: 12px 15px; /* ปรับ padding */
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08); /* ลดเงา */
     border-left: 5px solid #6c757d; /* pending */
-    transition: transform 0.2s;
+    transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
+    cursor: pointer;
 }
-.info-card:hover { transform: translateY(-3px); }
-.info-card.arrived, .applicant-card.arrived, .view-details-btn.status.arrived { 
-    border-left-color: #28a745;  
-    background-color: #dcf3e4;
+.info-card:hover {
+    transform: translateY(-2px); /* ลด effect */
+    box-shadow: 0 3px 6px rgba(0,0,0,0.1);
 }
-.info-card h3 { margin: 0 0 10px 0; }
-.info-card p { margin: 5px 0; }
+.info-card.arrived, .applicant-card.arrived {
+    border-left-color: #28a745;
+    background-color: #f0fff4;
+}
+.info-card h4 { margin: 0 0 5px 0; font-size: 15px; } /* ปรับขนาด */
+.info-card p { margin: 3px 0; font-size: 13px; color: #666;} /* ปรับขนาด */
+
+.info-card.active-card {
+    background-color: #e7f3ff;
+    border-left-color: #007bff;
+    box-shadow: 0 2px 5px rgba(0, 123, 255, 0.3);
+}
 
 /* Status Badge */
 .status {
-    padding: 3px 10px;
-    border-radius: 12px;
-    font-size: 12px;
+    padding: 2px 8px; /* ปรับ padding */
+    border-radius: 10px;
+    font-size: 11px; /* ลดขนาด */
     font-weight: bold;
     color: white;
     text-transform: uppercase;
+    display: inline-block;
+    margin-left: 5px;
 }
 .status.pending { background-color: #6c757d; }
 .status.arrived { background-color: #28a745; }
 
-/* Modal */
+/* Modal (สำหรับ Staff Info Modal) */
 .modal-backdrop {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background-color: rgba(0,0,0,0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0,0,0,0.5); display: flex;
+    justify-content: center; align-items: center; z-index: 1000;
 }
 .modal-content {
-    background-color: white;
-    padding: 30px;
-    border-radius: 8px;
-    width: 90%;
-    max-width: 600px;
-    position: relative;
+    background-color: white; padding: 30px; border-radius: 8px;
+    width: 90%; max-width: 600px; position: relative;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
 }
 .modal-close-btn {
-    position: absolute;
-    top: 10px; right: 10px;
-    border: none; background: none;
-    font-size: 24px; cursor: pointer;
+    position: absolute; top: 10px; right: 15px; border: none;
+    background: none; font-size: 28px; cursor: pointer; color: #aaa; line-height: 1;
 }
-.applicant-details p { margin: 8px 0; }
-#scoring-form .score-item { display: flex; align-items: center; margin-bottom: 10px; }
-#scoring-form label { width: 150px; }
-#scoring-form input, #scoring-form textarea {
-    flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px;
+.modal-close-btn:hover { color: #555; }
+
+/* Applicant Details & Scoring Form */
+.applicant-details p { margin: 8px 0; font-size: 15px; }
+.applicant-details strong { font-weight: 600; color: #333; display: inline-block; width: 100px; }
+.applicant-details a { color: #007bff; text-decoration: none; }
+.applicant-details a:hover { text-decoration: underline; }
+
+/* --- [ ⭐️ แก้ไข ⭐️ ] --- */
+/* ให้คะแนนเรียงแนวตั้งเหมือนเดิม */
+#scoring-form .score-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px; /* ระยะห่างระหว่างรายการ */
 }
-#scoring-form textarea { resize: vertical; min-height: 80px; }
-#scoring-form button { margin-top: 15px; }
+#scoring-form label {
+    width: 120px; /* ความกว้าง Label */
+    font-size: 14px;
+    color: #555;
+    padding-right: 10px;
+    text-align: right;
+    flex-shrink: 0; /* ไม่ให้ label หด */
+}
+#scoring-form .score-select { /* Dropdown คะแนน */
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    -webkit-appearance: none; -moz-appearance: none; appearance: none;
+    background-color: #f8f9fa; font-weight: bold; text-align: center;
+    cursor: pointer; transition: background-color 0.2s ease;
+    width: 70px; /* กำหนดความกว้าง */
+    font-size: 14px;
+    margin-left: auto; /* ดันไปชิดขวา */
+}
+#scoring-form textarea { /* ช่อง Notes */
+    flex: 1; /* ให้ขยายเต็มพื้นที่ */
+    padding: 8px; border: 1px solid #ccc; border-radius: 4px;
+    font-size: 14px; resize: vertical; min-height: 80px;
+}
+/* --- [ ⭐️ จบ ⭐️ ] --- */
+
+#scoring-form button { /* ปุ่ม Save */
+    margin-top: 15px; padding: 10px 20px; background-color: #28a745;
+    color: white; border: none; font-weight: bold; cursor: pointer;
+    display: block; /* ทำให้เป็น block */
+    margin-left: auto; /* ดันไปชิดขวา */
+    margin-right: 0; /* ไม่ต้องมี margin ขวา */
+}
+#scoring-form button:hover { background-color: #218838; }
+
 
 /* Staff Table */
-#staff-table { width: 100%; border-collapse: collapse; }
-#staff-table th, #staff-table td {
-    padding: 12px;
-    text-align: left;
-    border-bottom: 1px solid #eee;
-}
-#staff-table th { background-color: #f8f9fa; }
+#staff-table { width: 100%; border-collapse: collapse; margin-top: 15px;}
+#staff-table th, #staff-table td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
+#staff-table th { background-color: #f8f9fa; font-weight: 600;}
 #staff-table .actions { display: flex; align-items: center; gap: 10px; }
 
 /* Admin Page */
@@ -120,377 +165,190 @@ button:hover { background-color: #f0f0f0; }
 .kanban-column { flex: 1 0 250px; min-width: 250px; background-color: #f4f5f7; border-radius: 8px; }
 .kanban-column h2 { padding: 15px; margin: 0; font-size: 16px; border-bottom: 1px solid #ddd; }
 .kanban-items { padding: 10px; min-height: 50px; }
-.applicant-card.small { padding: 10px; font-size: 14px; display: flex; justify-content: space-between; }
+.applicant-card.small { padding: 10px; font-size: 14px; display: flex; justify-content: space-between; align-items: center; cursor: default;}
 .applicant-card.small .status { font-size: 10px; padding: 2px 6px; }
 .no-items { text-align: center; color: #999; padding: 10px; font-style: italic;}
 .chart-container { max-width: 800px; margin: 20px auto; }
 
-/* --- Add these styles to your existing style.css --- */
-
 /* Staff Page Specific */
 .staff-page .controls {
-    display: flex;
-    gap: 15px;
-    margin-bottom: 20px;
-    padding: 15px;
-    background-color: #f8f9fa;
-    border-radius: 8px;
+    display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;
+    padding: 15px; background-color: #f8f9fa; border-radius: 8px;
 }
-.staff-page .controls input,
-.staff-page .controls select {
-    width: 100%;
-    padding: 10px;
-    font-size: 16px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
+.staff-page .controls input, .staff-page .controls select {
+    flex: 1; min-width: 180px; padding: 10px; font-size: 14px;
+    border: 1px solid #ddd; border-radius: 5px;
 }
-.staff-board {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-}
+.staff-board { display: grid; gap: 20px; } /* columns กำหนดใน HTML */
 .board-column .column-header {
-    padding: 10px 15px;
-    border-radius: 8px 8px 0 0;
-    color: white;
-    margin-bottom: 10px;
+    padding: 10px 15px; border-radius: 8px 8px 0 0; color: white; margin-bottom: 10px;
 }
 .column-header.pending-header { background-color: #6c757d; }
 .column-header.arrived-header { background-color: #28a745; }
-.column-header h2 {
-    margin: 0;
-    font-size: 18px;
-}
+.column-header h2 { margin: 0; font-size: 18px; display: flex; justify-content: space-between; align-items: center; }
 .applicant-list {
-    background-color: #f4f5f7;
-    border-radius: 0 0 8px 8px;
-    padding: 10px;
-    height: 65vh;
-    overflow-y: auto;
+    background-color: #f4f5f7; border-radius: 0 0 8px 8px; padding: 10px;
+    height: 60vh; overflow-y: auto;
 }
 
 /* Staff Card */
 .staff-card {
-    background: white;
-    border-radius: 5px;
-    padding: 15px;
-    margin-bottom: 10px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-left: 5px solid #6c757d; /* pending */
+    background: white; border-radius: 5px; padding: 15px; margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08); display: flex; justify-content: space-between;
+    align-items: center; border-left: 5px solid #6c757d; cursor: default;
 }
-.staff-card.arrived {
-    border-left-color: #28a745;
-}
-.staff-card h4 {
-    margin: 0 0 5px 0;
-    font-size: 16px;
-}
-.staff-card p {
-    margin: 0;
-    font-size: 14px;
-    color: #555;
-}
-.staff-card .interview-slot {
-    font-size: 12px;
-    color: #888;
-    margin-top: 5px;
-}
-.card-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    align-items: flex-end;
-}
-.card-actions .action-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-.card-actions label {
-    font-size: 12px;
-    color: #666;
-}
+.staff-card.arrived { border-left-color: #28a745; }
+.staff-card h4 { margin: 0 0 5px 0; font-size: 16px; }
+.staff-card p { margin: 3px 0; font-size: 14px; color: #555; }
+.staff-card .interview-slot { font-size: 12px; color: #888; margin-top: 5px; }
+.card-actions { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; min-width: 210px; }
+.card-actions .action-item { display: flex; align-items: center; gap: 8px; width: 100%; }
+.card-actions label { font-size: 12px; color: #666; width: 40px; text-align: right; flex-shrink: 0; }
+.card-actions select { flex-grow: 1; width: auto; font-size: 13px; padding: 6px 8px; /* ปรับ padding dropdown */ }
 .card-actions .check-in-btn, .card-actions .undo-check-in-btn {
-    width: 120px;
-    padding: 8px;
-    border: none;
-    color: white;
-    font-weight: bold;
+    width: 100%; padding: 6px 8px; border: none; color: white; font-weight: bold;
+    font-size: 13px; margin-top: 5px; cursor: pointer;
 }
-.card-actions .check-in-btn {
-    background-color: #28a745;
-}
-.card-actions .undo-check-in-btn {
-    background-color: #ffc107;
-    color: #333;
-}
-/* --- Add/Replace these styles for the NEW Timeslot Dashboard --- */
+.card-actions .check-in-btn { background-color: #28a745; }
+.card-actions .undo-check-in-btn { background-color: #ffc107; color: #333; }
 
-.dashboard-container {
-    margin-bottom: 20px;
+/* Timeslot Dashboard */
+.dashboard-container { margin-bottom: 20px; }
+.dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px; }
+.dashboard-header h2 { margin: 0; }
+/* Date Switch */
+.date-switch { display: flex; border: 1px solid #ccc; border-radius: 5px; overflow: hidden; margin-left: auto; }
+.date-switch label { display: block; }
+.date-switch input[type="radio"] { display: none; }
+.date-switch span { display: block; padding: 8px 15px; background-color: #f8f9fa; color: #495057; cursor: pointer; font-size: 14px; border-left: 1px solid #ccc; transition: background-color 0.2s ease, color 0.2s ease; }
+.date-switch label:first-child span { border-left: none; }
+.date-switch input[type="radio"]:checked + span { background-color: #007bff; color: white; font-weight: bold; }
+.date-switch span:hover { background-color: #e9ecef; }
+.date-switch input[type="radio"]:checked + span:hover { background-color: #0056b3; }
+
+#timeslot-dashboard { width: 100%; overflow-x: auto; border: 1px solid #ddd; border-radius: 8px; background-color: white; }
+#timeslot-dashboard table { width: 100%; border-collapse: collapse; font-size: 14px; white-space: nowrap; }
+#timeslot-dashboard th, #timeslot-dashboard td { padding: 10px 15px; text-align: center; border: 1px solid #e0e0e0; vertical-align: middle; }
+#timeslot-dashboard th { background-color: #f8f9fa; position: sticky; top: 0; z-index: 10; font-weight: 600; }
+#timeslot-dashboard td:first-child, #timeslot-dashboard th:first-child { position: sticky; left: 0; background-color: #f8f9fa; z-index: 11; text-align: left; font-weight: 600; }
+#timeslot-dashboard td.available { color: #b0b0b0; font-style: italic; background-color: #fdfdfd; }
+#timeslot-dashboard td.busy { font-weight: 500; cursor: pointer; background-color: #e9ecef; transition: background-color 0.2s; }
+#timeslot-dashboard td.busy:hover { background-color: #d0d6db; }
+#timeslot-dashboard td.arrived-in-table { background-color: #d4edda; color: #155724; font-weight: bold; }
+#timeslot-dashboard th.current-slot-header { background-color: #fffbe6; color: #856404; border-bottom: 2px solid #ffeeba; }
+
+.divider { border: none; border-top: 1px solid #eee; margin: 30px 0; }
+
+/* Staff Info Modal */
+#staff-info-modal .modal-content { max-width: 450px; }
+#staff-modal-body h2 { margin-top: 0; color: #007bff; margin-bottom: 20px; }
+#staff-modal-body p { margin: 12px 0; font-size: 16px; line-height: 1.6; }
+#staff-modal-body strong { color: #333; display: inline-block; width: 140px; }
+
+/* Shuffle/Clear Buttons */
+header div { display: flex; gap: 10px; }
+.shuffle-button { background-color: #007bff; color: white; border: none; }
+.clear-cache-button { background-color: #dc3545; color: white; border: none; }
+
+/* Drag and Drop */
+#timeslot-dashboard td.busy { cursor: grab; }
+#timeslot-dashboard td.dragging { opacity: 0.4; border: 2px dashed #999; }
+#timeslot-dashboard td.drag-over { background-color: #d4edda !important; border: 2px dashed #155724; }
+
+/* Interviewer Page Specific */
+/* --- [ ⭐️ แก้ไข Layout ⭐️ ] --- */
+.interviewer-container {
+    display: flex; /* ใช้ Flexbox */
+    gap: 20px; /* ระยะห่างระหว่าง Pane */
+    /* height: calc(85vh); เอาออก ให้สูงตามเนื้อหา */
+    margin-top: 15px; /* เพิ่มระยะห่างจาก Header */
 }
-.dashboard-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-}
-.dashboard-header h2 {
-    margin: 0;
-}
-#timeslot-dashboard {
-    width: 100%;
-    overflow-x: auto; /* Allow horizontal scroll */
-    border: 1px solid #ddd;
+.card-list-pane {
+    flex: 3; /* สัดส่วน 30% */
+    min-width: 300px; /* ความกว้างขั้นต่ำ */
+    max-height: 75vh; /* จำกัดความสูง + scroll */
+    overflow-y: auto;
+    border: 1px solid #eee;
     border-radius: 8px;
-}
-#timeslot-dashboard table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 14px;
-    white-space: nowrap; /* Prevent text wrapping in cells */
-}
-#timeslot-dashboard th, #timeslot-dashboard td {
-    padding: 10px 15px;
-    text-align: center;
-    border: 1px solid #e0e0e0;
-}
-#timeslot-dashboard th {
+    padding: 15px;
     background-color: #f8f9fa;
-    position: sticky;
-    top: 0;
-    z-index: 10;
 }
-#timeslot-dashboard td:first-child, #timeslot-dashboard th:first-child {
-    position: sticky;
-    left: 0;
-    background-color: #f8f9fa;
-    z-index: 11;
-    text-align: left;
+.details-pane {
+    flex: 7; /* สัดส่วน 70% */
+    max-height: 75vh; /* จำกัดความสูง + scroll */
+    overflow-y: auto;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    padding: 25px;
+    background-color: #ffffff;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.08);
 }
-#timeslot-dashboard td.available {
-    color: #b0b0b0;
-    font-style: italic;
-    background-color: #fdfdfd;
+.details-pane > p { /* ข้อความเริ่มต้น */
+    color: #888; text-align: center; margin-top: 50px; font-style: italic;
 }
-#timeslot-dashboard td.busy {
-    font-weight: 500;
-    cursor: pointer;
-    background-color: #e9ecef;
-    transition: background-color 0.2s;
-}
-#timeslot-dashboard td.busy:hover {
-    background-color: #d0d6db;
-}
-/* New style for arrived applicants in the table */
-#timeslot-dashboard td.arrived-in-table {
-    background-color: #d4edda; /* Light green */
-    color: #155724;
-    font-weight: bold;
-}
-#timeslot-dashboard th.current-slot-header {
-    background-color: #fffbe6; /* Light yellow */
-    color: #856404;
-}
+/* --- [ ⭐️ จบ Layout ⭐️ ] --- */
 
-.divider {
-    border: none;
-    border-top: 2px dashed #ccc;
-    margin: 30px 0;
-}
-
-/* --- Add these styles for the new Info Modal --- */
-#staff-info-modal .modal-content {
-    max-width: 450px;
-}
-#staff-modal-body h2 {
-    margin-top: 0;
-    color: #007bff;
-}
-#staff-modal-body p {
-    margin: 12px 0;
-    font-size: 16px;
-    line-height: 1.6;
-}
-#staff-modal-body strong {
-    color: #333;
-    display: inline-block;
-    width: 140px;
-}
-/* --- Add these styles to your existing style.css --- */
-
-.staff-card .card-actions {
-    min-width: 200px; /* ให้พื้นที่กับ dropdown เพียงพอ */
-}
-
-.card-actions .action-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    width: 100%; /* ทำให้ dropdown กว้างเต็มพื้นที่ */
-}
-
-.card-actions .action-item.full-width {
-    justify-content: flex-end;
-}
-
-.card-actions .action-item label {
-    font-size: 12px;
-    color: #666;
-    width: 40px; /* กำหนดความกว้างของ label */
-}
-
-.card-actions .action-item select {
-    flex-grow: 1; /* ทำให้ select ขยายเต็มพื้นที่ที่เหลือ */
-    width: 100%;
-}
-
-/* Style for shuffle and clear cache buttons */
-header div {
-    display: flex;
-    gap: 10px;
-}
-.shuffle-button {
-    background-color: #007bff;
-    color: white;
-    border: none;
-}
-.clear-cache-button {
-    background-color: #dc3545;
-    color: white;
-    border: none;
-}
-/* --- Add these styles for Drag and Drop --- */
-#timeslot-dashboard td.busy {
-    cursor: grab;
-}
-#timeslot-dashboard td.dragging {
-    opacity: 0.4;
-    border: 2px dashed #999;
-}
-#timeslot-dashboard td.drag-over {
-    background-color: #d4edda !important; /* Light green to indicate a valid drop target */
-    border: 2px dashed #155724;
-}
-/* --- Add these styles for Interviewer Page Timeslot Groups --- */
-
-.timeslot-group {
-    margin-bottom: 30px; /* เพิ่มระยะห่างระหว่างกลุ่มเวลา */
-}
-
+.timeslot-group { margin-bottom: 20px; /* ลดระยะห่าง */ }
 .timeslot-header {
-    background-color: #f8f9fa;
-    padding: 10px 15px;
-    border-radius: 8px;
-    border: 1px solid #e0e0e0;
-    margin-bottom: 15px;
-    font-size: 18px;
-    color: #495057;
-}
-/* --- Add these styles for Interviewer Page Date Header --- */
-.interview-date-header {
-    font-size: 22px;
-    color: #333;
-    padding-bottom: 10px;
-    border-bottom: 2px solid #007bff;
-    margin-top: 40px;
-    margin-bottom: 20px;
+    background-color: #e9ecef; padding: 8px 12px; border-radius: 5px;
+    border: 1px solid #dee2e6; margin-bottom: 10px; font-size: 15px; /* ลดขนาด */
+    color: #495057; font-weight: 600;
 }
 #applicant-list-view header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 0; /* เอา margin ออก เพราะมี container ใหม่ */
+    padding-bottom: 10px; border-bottom: 1px solid #eee;
+}
+#applicant-list-view header h1 { font-size: 20px; }
+.header-controls { display: flex; gap: 15px; align-items: center; }
+.header-controls select { min-width: 180px; }
+.header-controls button { background-color: #6c757d; color: white; }
+.header-controls button:hover { background-color: #5a6268; }
+
+
+/* Score Select Dropdown Colors (เหมือนเดิม) */
+.score-0 { background-color: #e9ecef; color: #495057; }
+.score-1 { background-color: #f8f9fa; color: #495057; }
+.score-2 { background-color: #f8d7da; color: #721c24; }
+.score-3 { background-color: #fff3cd; color: #856404; }
+.score-4 { background-color: #d4edda; color: #155724; }
+.score-5 { background-color: #d1ecf1; color: #0c5460; }
+
+/* Online Column Styles */
+.column-header.online-header { background-color: #6f42c1; }
+.staff-card.online { border-left-color: #6f42c1; background-color: #f3eefc; }
+.staff-card.online .action-item button, .staff-card.online .action-item select { display: none; }
+.staff-card.online .action-item p { width: 100%; margin-top: 10px; }
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+    .staff-board { grid-template-columns: 1fr 1fr; }
+    .staff-board .board-column:last-child { grid-column: 1 / -1; margin-top: 20px; }
+    /* --- [ ⭐️ แก้ไข Responsive Interviewer ⭐️ ] --- */
+    .interviewer-container {
+        flex-direction: column; /* เปลี่ยนเป็นแนวตั้ง */
+        /* height: auto; (เอาออก) */
+    }
+    .card-list-pane, .details-pane {
+        max-width: none;
+        flex-basis: auto;
+        max-height: none; /* เอา max-height ออก */
+    }
+    .card-list-pane {
+         max-height: 45vh; /* จำกัดความสูง List ใหม่ */
+    }
+    /* --- [ ⭐️ จบ ⭐️ ] --- */
 }
 
-.header-controls {
-    display: flex;
-    gap: 15px;
-    align-items: center;
-}
-/* สไตล์พื้นฐานสำหรับ dropdown ให้คะแนน */
-.score-select {
-    padding: 12px;
-    border: 5px solid background-color;
-    border-radius: 4px;
-    -webkit-appearance: none; /* ลบสไตล์พื้นฐานของ browser */
-    -moz-appearance: none;
-    appearance: none;
-    background-color: #f8f9fa; /* สีพื้นหลังเริ่มต้น */
-    font-weight: bold;
-    text-align: center;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-/* สไตล์สำหรับสีพื้นหลังของแต่ละคะแนน */
-.score-0 { background-color: #e9ecef; color: #495057; } /* ดำอ่อน (เทาเข้ม) */
-.score-1 { background-color: #f8f9fa; color: #495057; } /* เทาอ่อน */
-.score-2 { background-color: #f8d7da; color: #721c24; } /* แดงอ่อน */
-.score-3 { background-color: #fff3cd; color: #856404; } /* เหลืองอ่อน */
-.score-4 { background-color: #d4edda; color: #155724; } /* เขียวอ่อน */
-.score-5 { background-color: #d1ecf1; color: #0c5460; } /* ฟ้าอ่อน */
-
-/* --- [ ⭐️ เพิ่มโค้ดนี้ที่ท้ายไฟล์ style.css ⭐️ ] --- */
-
-/* 1. สไตล์สำหรับ Split-Screen Layout */
-.split-container {
-    display: flex;
-    flex-direction: row;
-    height: calc(100vh - 120px); /* ความสูงเต็มจอ (ลบ header) */
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    overflow: hidden;
-}
-
-/* 2. ส่วนซ้าย (รายชื่อ) */
-.split-pane-list {
-    flex: 1; /* ให้ขยายได้ */
-    min-width: 320px; /* ความกว้างขั้นต่ำ */
-    max-width: 40%; /* ความกว้างสูงสุด 40% */
-    overflow-y: auto; /* มี Scrollbar ถ้าล้น */
-    background-color: #f8f9fa;
-    border-right: 1px solid #ddd;
-    padding: 10px;
-}
-
-/* 3. ส่วนขวา (ฟอร์มให้คะแนน) */
-.split-pane-details {
-    flex: 1.5; /* ให้กว้างกว่าส่วนซ้าย (1.5 เท่า) */
-    overflow-y: auto; /* มี Scrollbar ถ้าล้น */
-    background-color: #ffffff;
-}
-
-#scoring-view-body {
-    padding: 30px;
-}
-
-/* 4. ข้อความเริ่มต้น (placeholder) */
-.placeholder-text {
-    font-size: 18px;
-    color: #888;
-    text-align: center;
-    margin-top: 50px;
-    font-style: italic;
-}
-
-/* 5. สไตล์สำหรับ Card ที่กำลังถูกเลือก (Active) */
-.info-card.active-card {
-    background-color: #e6f2ff;
-    border-left-color: #007bff;
-    box-shadow: 0 4px 8px rgba(0,123,255,0.2);
-    transform: translateY(0);
-}
-
-/* 6. (ปรับปรุง) ลบเงา Hover เมื่อเป็น Active */
-.info-card.active-card:hover {
-    transform: translateY(0);
-}
-
-
-/* 7. ลบสไตล์ Modal ที่ไม่ใช้แล้ว (กันเหนียว) */
-.modal-backdrop, .modal-content {
-    display: none;
+@media (max-width: 768px) {
+    .container { padding: 15px; } /* ลด padding container */
+    header { margin-bottom: 15px; }
+    .staff-board { grid-template-columns: 1fr; }
+    .staff-board .board-column:last-child { margin-top: 0; }
+    .staff-page .controls { flex-direction: column; }
+    .staff-page .controls input, .staff-page .controls select { min-width: unset; width: 100%; }
+    .applicant-grid { grid-template-columns: 1fr; } /* Card เต็มความกว้างเสมอ */
+    .interviewer-container { gap: 15px; } /* ลด gap */
+    .card-list-pane, .details-pane { padding: 15px; } /* ลด padding pane */
+    #scoring-form label { width: 100px; } /* ลด width label อีก */
 }

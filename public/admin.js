@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // --- Render Overview Board ---
         adminOverview.innerHTML = '';
         const columns = {};
-        for (let i = 1; i <= 8; i++) {
+        for (let i = 1; i <= 9; i++) {
             columns[`table-${i}`] = [];
         }
         allData.forEach(item => {
