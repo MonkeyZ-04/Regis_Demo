@@ -63,7 +63,7 @@ button:hover { background-color: #f0f0f0; }
 }
 .info-card.arrived, .applicant-card.arrived {
     border-left-color: #28a745;
-    background-color: #f0fff4;
+    background-color: #e4ffeb;
 }
 .info-card h4 { margin: 0 0 5px 0; font-size: 15px; } /* ปรับขนาด */
 .info-card p { margin: 3px 0; font-size: 13px; color: #666;} /* ปรับขนาด */
@@ -375,4 +375,16 @@ header div { display: flex; gap: 10px; }
     background-color: #e3daf3; /* สีม่วงอ่อน */
     font-weight: bold; 
     border: 1px dashed #6f42c1; /* เส้นประสีม่วง */
+}
+/* ⭐️ [เพิ่ม CSS นี้เข้าไป] สำหรับ Online Card ในหน้า Interviewer ⭐️ */
+.info-card.online-card {
+    border-left-color: #6f42c1; /* สีม่วงเข้ม (เหมือน Staff) */
+    background-color: #ece3fd; /* สีม่วงอ่อน (เหมือน Staff) */
+}
+
+/* (ถ้าต้องการให้ Active Card ที่เป็น Online มีสีม่วงด้วย ก็เพิ่มอันนี้) */
+.info-card.online-card.active-card {
+    border-left-color: #5a2ab3; /* ม่วงเข้มขึ้น */
+    background-color: #e6e0f2; /* ม่วงอ่อนเข้มขึ้น */
+    box-shadow: 0 2px 5px rgba(111, 66, 193, 0.3); /* เงาสีม่วง */
 }

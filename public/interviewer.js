@@ -124,7 +124,11 @@ document.addEventListener('DOMContentLoaded', () => {
             cardsGrid.className = 'applicant-grid';
             applicantsBySlot[slot].forEach(app => {
                 const card = document.createElement('div');
-                card.className = `info-card ${app.status.toLowerCase()}`;
+                if (app.Online) {
+                    card.className = 'info-card online-card'; 
+                } else {
+                    card.className = `info-card ${app.status.toLowerCase()}`;
+                }
                 card.dataset.applicantId = app.id;
                 card.innerHTML = `
                     <h4>${app.firstName} ${app.lastName} (${app.nickname})</h4>
