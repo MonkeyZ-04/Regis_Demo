@@ -190,7 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${createScoreDropdown('creativity', 'Creativity', applicant.scores.creativity)}
                     <div class="score-item">
                         <label for="notes">หมายเหตุ:</label>
-                        <textarea id="notes">${applicant.notes || ''}</textarea> {/* เพิ่ม || '' */}
+                        <textarea id="notes">${applicant.notes || ''}</textarea> 
                     </div>
                     <button type="submit">บันทึกคะแนน</button>
                 </form>
