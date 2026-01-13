@@ -89,6 +89,7 @@ const renderTimeslotDashboard = () => {
 
     const generatedTimes = generateTimeSlots('16:30', '20:30', 30);
     const allTimeSet = new Set([...dataTimes, ...generatedTimes]);
+    const excludedTimes = ['18:50', '19:10', '19:30', '19:50', '20:10', '20:30'];
     const sortedTimes = Array.from(allTimeSet)
                       .sort((a,b) => a.localeCompare(b))
                       .filter(time => !excludedTimes.includes(time));
