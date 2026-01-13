@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>Upload db.json to Firebase RTDB</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+        #status { margin-top: 15px; font-weight: bold; }
+        pre { background-color: #f4f4f4; padding: 10px; border: 1px solid #ccc; max-height: 200px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <h1>อัปโหลดข้อมูล db.json ไปยัง Firebase Realtime Database</h1>
+
+    <p>
+        <strong>ข้อควรระวัง:</strong>
+        <ul>
+            <li>ตรวจสอบให้แน่ใจว่าไฟล์ <code>db.json</code> และ <code>data.js</code> อยู่ในโฟลเดอร์เดียวกับไฟล์ HTML นี้</li>
+            <li>สคริปต์ (data.js) จะทำการอ่าน <code>db.json</code> และสร้าง 'id' พร้อมสุ่มโต๊ะสัมภาษณ์ให้โดยอัตโนมัติ</li>
+            <li>ข้อมูลใน Firebase Realtime Database ที่ Path ที่ระบุจะถูก <strong>เขียนทับ</strong> ทั้งหมด!</li>
+            <li>กรุณากรอก <code>firebaseConfig</code> ของคุณด้านล่างให้ถูกต้อง</li>
+        </ul>
+    </p>
+
+    <button id="uploadButton">เริ่มอัปโหลดข้อมูล</button>
+    <div id="status">สถานะ: รอการทำงาน...</div>
+    <hr>
+    <h2>ข้อมูลตัวอย่าง (5 รายการแรกที่ประมวลผลแล้ว):</h2>
+    <pre id="preview">กำลังโหลดตัวอย่าง...</pre>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    
+    <script src="data.js"></script>
+
+    <script>
+        // ==========================================
+        //         ⭐️⭐️⭐️ ตั้งค่าตรงนี้ ⭐️⭐️⭐️
+        // ==========================================
+
+        // 1. วาง firebaseConfig ของคุณที่คัดลอกมาจาก Firebase Console
+const firebaseConfig = {
+  apiKey: "AIzaSyAHf_f5CnirpFQwbfNIvj54X72lCsRhFbg",
+  authDomain: "wintercamp2025-eb71b.firebaseapp.com",
+  databaseURL: "https://wintercamp2025-eb71b-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "wintercamp2025-eb71b",
+  storageBucket: "wintercamp2025-eb71b.firebasestorage.app",
+  messagingSenderId: "425433198221",
+  appId: "1:425433198221:web:bf5adeb0fcbdb41e61fcc4",
+  measurementId: "G-W9KBFJQR5Y"
+};
+
+
+        // 2. ระบุ Path ใน Realtime Database ที่ต้องการเขียนข้อมูลทับ
+        const dbPath = '/applicants'; // 👈 แก้ไข Path ตามต้องการ
+
+        // 3. ชื่อไฟล์ JSON (data.js จะใช้ไฟล์นี้เองอัตโนมัติ)
+        const jsonFileName = 'db.json';
+
+        // ==========================================
+        //             (ส่วนโค้ดการทำงาน)
+        // ==========================================
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const dbRef = database.ref(dbPath);
+
+        const uploadButton = document.getElementById('uploadButton');
+        const statusDiv = document.getElementById('status');
+        const previewPre = document.getElementById('preview');
+
+        let jsonDataArray = null; // เก็บข้อมูลที่ประมวลผลแล้ว
+
+        // ฟังก์ชันสำหรับแสดงสถานะ
+        function setStatus(message, isError = false) {
+            statusDiv.textContent = `สถานะ: ${message}`;
+            statusDiv.style.color = isError ? 'red' : 'green';
+            console.log(message);
+        }
+
+        // ⭐️⭐️⭐️ แก้ไขฟังก์ชันนี้ทั้งหมด ⭐️⭐️⭐️
+        // ฟังก์ชันโหลดและแสดงตัวอย่างข้อมูล (แก้ไขให้เรียกใช้ data.js)
+        async function loadAndPreviewData() {
+            setStatus('กำลังประมวลผล ' + jsonFileName + ' (สร้าง ID และสุ่มโต๊ะ)...');
+            previewPre.textContent = 'กำลังประมวลผล...';
+            try {
+                // เรียกใช้ initialize() จาก data.js
+                // ฟังก์ชันนี้จะไป fetch('db.json'), สร้าง ID, และสุ่มโต๊ะ ให้เอง
+                
+                // ล้าง localStorage ก่อน เพื่อให้แน่ใจว่าได้ข้อมูลใหม่จาก db.json จริงๆ
+                localStorage.removeItem(DB_KEY);
+                
+                jsonDataArray = await Database.initialize();
+
+                if (!Array.isArray(jsonDataArray)) {
+                     throw new Error(`Database.initialize() ไม่ได้คืนค่าเป็น Array`);
+                }
+
+                // ตรวจสอบข้อมูลที่ประมวลผลแล้ว (ตอนนี้ควรจะมี id และ table แล้ว)
+                if (jsonDataArray.length > 0 && (jsonDataArray[0].id === undefined || jsonDataArray[0].table === undefined)) {
+                     throw new Error('ข้อมูลที่ประมวลผลแล้วยังคงไม่มี "id" หรือ "table". โปรดตรวจสอบ data.js');
+                }
+
+                // แสดงตัวอย่าง 5 รายการแรก (ตอนนี้จะมี id, table, scores, status ฯลฯ)
+                previewPre.textContent = JSON.stringify(jsonDataArray.slice(0, 5), null, 2);
+                setStatus('ประมวลผลข้อมูลสำเร็จ! จำนวน ' + jsonDataArray.length + ' รายการ พร้อมอัปโหลด');
+                uploadButton.disabled = false; // เปิดปุ่ม
+
+            } catch (error) {
+                setStatus(`เกิดข้อผิดพลาดในการประมวลผลไฟล์: ${error.message}`, true);
+                previewPre.textContent = `เกิดข้อผิดพลาด: ${error.message}\n\n(โปรดตรวจสอบว่าไฟล์ db.json และ data.js อยู่ที่เดียวกับไฟล์นี้ และไฟล์ db.json ถูกต้อง)`;
+                uploadButton.disabled = true; // ปิดปุ่ม
+            }
+        }
+
+        // เมื่อกดปุ่มอัปโหลด (ฟังก์ชันนี้เหมือนเดิม ใช้งานได้เลย)
+        uploadButton.addEventListener('click', async () => {
+            if (!jsonDataArray) {
+                setStatus('ยังไม่มีข้อมูลให้อัปโหลด กรุณารอโหลดข้อมูลก่อน', true);
+                return;
+            }
+
+            if (!confirm(`ยืนยันการเขียนข้อมูล ${jsonDataArray.length} รายการทับลงใน Firebase RTDB ที่ Path: "${dbPath}" ?\n\nข้อมูลเดิมจะถูกลบทั้งหมด!`)) {
+                setStatus('ยกเลิกการอัปโหลด');
+                return;
+            }
+
+            setStatus('กำลังแปลงข้อมูล (Array to Object)...');
+            uploadButton.disabled = true;
+
+            // แปลง Array เป็น Object โดยใช้ id เป็น Key
+            // (ข้อมูลใน jsonDataArray ตอนนี้มี 'id' ที่สร้างโดย data.js แล้ว)
+            const dataToUpload = {};
+            for (const item of jsonDataArray) {
+                dataToUpload[String(item.id)] = item;
+            }
+
+            setStatus(`กำลังอัปโหลดข้อมูล ${Object.keys(dataToUpload).length} รายการไปยัง ${dbPath} ...`);
+
+            try {
+                // เขียนข้อมูลทั้งหมดลง Firebase (ใช้ set จะเขียนทับทั้งหมด)
+                await dbRef.set(dataToUpload);
+                setStatus('อัปโหลดข้อมูลสำเร็จ!', false);
+                alert('อัปโหลดข้อมูลสำเร็จ!');
+
+            } catch (error) {
+                setStatus(`เกิดข้อผิดพลาดในการอัปโหลด: ${error.message}`, true);
+                alert(`เกิดข้อผิดพลาดในการอัปโหลด: ${error.message}`);
+                uploadButton.disabled = false; // เปิดปุ่มให้ลองใหม่
+            }
+        });
+
+        // เริ่มโหลดข้อมูลตัวอย่างเมื่อหน้าเว็บพร้อม
+        uploadButton.disabled = true; // ปิดปุ่มไว้ก่อน
+        loadAndPreviewData();
+
+    </script>
+</body>
+</html>

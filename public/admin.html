@@ -9,8 +9,11 @@
 <body>
     <div class="container">
         <header><h1>Admin Dashboard - ภาพรวม</h1></header>
-        
-        <h2>ภาพรวมแต่ละโต๊ะ</h2>
+
+        <div class="kanban-header">
+            <h2>ภาพรวมแต่ละโต๊ะ</h2>
+        </div>
+
         <div id="admin-overview" class="kanban-board"></div>
 
         <hr>
@@ -19,8 +22,35 @@
         <div class="chart-container">
             <canvas id="score-chart"></canvas>
         </div>
+
+        <hr style="border-top: 1px solid #eee; margin: 30px 0;">
+
+        <div class="ranked-list-header">
+            <h2>สรุปคะแนนผู้สมัคร (เรียงตามลำดับ)</h2>
+            <select id="table-filter">
+                <option value="all">แสดงทุกโต๊ะ</option>
+                <option value="1">โต๊ะ 1</option>
+                <option value="2">โต๊ะ 2</option>
+                <option value="3">โต๊ะ 3</option>
+                <option value="4">โต๊ะ 4</option>
+                <option value="5">โต๊ะ 5</option>
+                <option value="6">โต๊ะ 6</option>
+                <option value="7">โต๊ะ 7</option>
+                <option value="8">โต๊ะ 8</option>
+                <option value="9">โต๊ะ 9</option>
+            </select>
+        </div>
+
+        <div id="ranked-list-container" class="ranked-list">
+            <p>กำลังโหลดข้อมูล...</p>
+        </div>
+
     </div>
-    
+
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
     <script src="data.js"></script>
     <script src="admin.js"></script>
 </body>
