@@ -45,7 +45,7 @@ const generateTimeSlots = (startStr, endStr, intervalMinutes) => {
 
 const parseDateTime = (slotString) => {
     if (!slotString) return { date: null, time: null, fullDate: null };
-    const dateMatch = slotString.match(/(วันที่|วันที) \d+ ตุลาคม/);
+    const dateMatch = slotString.match(/(วันที่|วันที) \d+ มกราคม/);
     const datePart = dateMatch ? dateMatch[0].replace('วันที', 'วันที่') : null;
     const timeMatch = slotString.match(/(\d{2}[.:]\d{2})/);
     const timePart = timeMatch ? timeMatch[0] : null;
@@ -54,7 +54,7 @@ const parseDateTime = (slotString) => {
         const day = parseInt(datePart.match(/\d+/)[0], 10);
         const [hour, minute] = timePart.split(/[.:]/).map(Number);
         const now = new Date();
-        fullDate = new Date(now.getFullYear(), 9, day, hour, minute); // 9 = October
+        fullDate = new Date(now.getFullYear(), 0, day, hour, minute); // 0 = January
     }
     return { date: datePart, time: timePart, fullDate: fullDate };
 };
