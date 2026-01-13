@@ -228,7 +228,7 @@ const renderCheckinBoard = () => {
                 </div>
                 <div class="action-item">
                     <label>โต๊ะ:</label>
-                    <select class="table-select-dropdown">${[1,2,3,4,5,6,7,8,9].map(n => `<option value="${n}" ${n === app.table ? 'selected' : ''}>${n}</option>`).join('')}</select>
+                    <select class="table-select-dropdown">${[1,2,3,4,5].map(n => `<option value="${n}" ${n === app.table ? 'selected' : ''}>${n}</option>`).join('')}</select>
                 </div>` : '<p style="font-size: 12px; color: purple; text-align: right;"><i>Online Interview</i></p>'
                 }
                 <div class="action-item">${!app.Online && app.status === 'Pending' ? `<button class="check-in-btn">Check-in</button>` : ''}</div>

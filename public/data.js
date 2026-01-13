@@ -276,7 +276,8 @@ const Database = {
                     interviewSlot: slot,
                     
                     // Fields สำหรับระบบจัดการ
-                    table: Math.floor(Math.random() * 9) + 1, // สุ่มโต๊ะ 1-9
+                    // table: Math.floor(Math.random() * 9) + 1, // สุ่มโต๊ะ 1-9
+                    table: Math.floor(Math.random() * 5) + 1,
                     status: 'Pending',
                     isCalled: false,
                     isForfeited: false,
