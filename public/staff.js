@@ -87,13 +87,13 @@ const renderTimeslotDashboard = () => {
             })
     )].filter(Boolean);
 
-    const generatedTimes = generateTimeSlots('16:30', '20:30', 20);
+    const generatedTimes = generateTimeSlots('16:30', '20:30', 30);
     const allTimeSet = new Set([...dataTimes, ...generatedTimes]);
     const excludedTimes = ['18:50', '19:10', '19:30', '19:50', '20:10', '20:30'];
     const sortedTimes = Array.from(allTimeSet)
                       .sort((a,b) => a.localeCompare(b))
                       .filter(time => !excludedTimes.includes(time));
-    const tables = Array.from({ length: 9 }, (_, i) => i + 1);
+    const tables = Array.from({ length: 5 }, (_, i) => i + 1);
     const now = new Date();
 
     let tableHTML = '<table><thead><tr><th>โต๊ะ \\ เวลา</th>';

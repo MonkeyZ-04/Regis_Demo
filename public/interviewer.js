@@ -1,4 +1,4 @@
-// public/interviewer.js (Version Update: Dynamic Submission)
+// public/interviewer.js (Version Update: Fully Dynamic Rendering)
 
 document.addEventListener('DOMContentLoaded', () => {
     // Elements
@@ -33,53 +33,49 @@ document.addEventListener('DOMContentLoaded', () => {
         return dateMatch ? dateMatch[0].replace('วันที', 'วันที่') : null;
     };
 
-    const createScoreDropdown = (id, label, currentValue = 0) => {
+    // ⭐️ Dynamic Score Dropdown Creator ⭐️
+    const createScoreDropdown = (id, label, currentValue = -1, maxScore = 5) => {
         let scoreOptions = [];
-        // Note: Logic นี้ยังคงต้องมี hardcode เล็กน้อยเรื่อง range ของแต่ละข้อ
-        // หรือถ้าอยากให้ dynamic สุดๆ สามารถเพิ่ม property range ลงใน Config ได้
-        if (id === 'score-application') {
-            scoreOptions.push({ value: -1, text: 'N/A', class: 'score-na' }); 
-            for (let i = 0; i <= 10; i += 0.5) {
-                let cssClass = 'score-0';
-                if (i >= 9) cssClass = 'score-5'; 
-                else if (i >= 7) cssClass = 'score-4'; 
-                else if (i >= 5) cssClass = 'score-3'; 
-                else if (i >= 3) cssClass = 'score-2'; 
-                else if (i >= 1) cssClass = 'score-1'; 
-                scoreOptions.push({ value: i, text: i.toString(), class: cssClass });
-            }
-        } else {
-            scoreOptions = [
-                { value: -1, text: 'N/A', class: 'score-na' }, 
-                { value: 0, text: '0', class: 'score-0' }, { value: 1, text: '1', class: 'score-1' },
-                { value: 2, text: '2', class: 'score-2' }, { value: 3, text: '3', class: 'score-3' },
-                { value: 4, text: '4', class: 'score-4' }, { value: 5, text: '5', class: 'score-5' },
-            ];
+        scoreOptions.push({ value: -1, text: 'N/A', class: 'score-na' });
+        
+        // Loop สร้างคะแนนตาม maxScore
+        const step = 0.5; // หรือ 1 ตามต้องการ
+        for (let i = 0; i <= maxScore; i += step) {
+            // คำนวณ Class สี โดยอิงสัดส่วนคะแนนเต็ม
+            let cssClass = 'score-0';
+            const percentage = i / maxScore;
+            
+            if (percentage >= 0.9) cssClass = 'score-5';       // 90-100% -> เขียวเข้ม
+            else if (percentage >= 0.7) cssClass = 'score-4';  // 70-89% -> เขียวอ่อน
+            else if (percentage >= 0.5) cssClass = 'score-3';  // 50-69% -> เหลือง
+            else if (percentage >= 0.3) cssClass = 'score-2';  // 30-49% -> ส้ม
+            else if (i > 0) cssClass = 'score-1';              // >0 -> เทาขาว
+            
+            // กรณี 0 คะแนนใช้ score-0
+            if (i === 0) cssClass = 'score-0';
+
+            scoreOptions.push({ value: i, text: i.toString(), class: cssClass });
         }
 
         const currentNumericValue = parseFloat(currentValue);
-
-        let optionsHTML = scoreOptions.map(opt =>
+        // หา Class เริ่มต้น
+        const initialOption = scoreOptions.find(opt => opt.value == currentNumericValue);
+        const initialClass = initialOption ? initialOption.class : 'score-na';
+        
+        const optionsHTML = scoreOptions.map(opt =>
             `<option value="${opt.value}" class="${opt.class}" ${opt.value == currentNumericValue ? 'selected' : ''}>${opt.text}</option>`
         ).join('');
 
-        const initialClass = scoreOptions.find(opt => opt.value == currentNumericValue)?.class || 'score-na';
-        const sizeClass = 'score-select'; 
         return `
-            <select id="${id}" class="${sizeClass} ${initialClass}" style="width: 70px; margin-left: 10px;">
+            <select id="score-${id}" class="score-select ${initialClass}" data-max-score="${maxScore}" style="width: 70px; margin-left: 10px;">
                 ${optionsHTML}
             </select>
         `;
     };
 
     const createDetailTextarea = (id, currentValue = '') => {
-        const textarea = document.createElement('textarea');
-        textarea.id = id;
-        textarea.className = 'detail-textarea';
-        textarea.textContent = currentValue; 
-        return textarea.outerHTML;
+        return `<textarea id="detail-${id}" class="detail-textarea">${currentValue || ''}</textarea>`;
     };
-
 
     // --- Rendering Functions ---
 
@@ -112,9 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!selectedDate) {
              cardsContainer.innerHTML = '<p>กรุณาเลือกวันสัมภาษณ์</p>';
-             if (!activeApplicantId) {
-                 scoringViewBody.innerHTML = '<p>กรุณาเลือกผู้สมัครเพื่อดูรายละเอียด</p>';
-             }
+             if (!activeApplicantId) scoringViewBody.innerHTML = '<p>กรุณาเลือกผู้สมัครเพื่อดูรายละเอียด</p>';
              return;
         }
 
@@ -123,14 +117,8 @@ document.addEventListener('DOMContentLoaded', () => {
         );
         if (applicantsForTableAndDate.length === 0) {
             cardsContainer.innerHTML = '<p>ยังไม่มีผู้สมัครสำหรับโต๊ะและวันที่นี้</p>';
-            if (!activeApplicantId) {
-                scoringViewBody.innerHTML = '<p>ยังไม่มีผู้สมัครสำหรับโต๊ะและวันที่นี้</p>';
-            }
+            if (!activeApplicantId) scoringViewBody.innerHTML = '<p>ยังไม่มีผู้สมัครสำหรับโต๊ะและวันที่นี้</p>';
             return;
-        }
-
-        if (!activeApplicantId) {
-            scoringViewBody.innerHTML = '<p>กรุณาเลือกผู้สมัครเพื่อดูรายละเอียด</p>';
         }
 
         const applicantsBySlot = applicantsForTableAndDate.reduce((acc, app) => {
@@ -144,45 +132,32 @@ document.addEventListener('DOMContentLoaded', () => {
         sortedSlots.forEach(slot => {
             const slotGroup = document.createElement('div');
             slotGroup.className = 'timeslot-group';
-            const slotTitle = document.createElement('h3');
-            slotTitle.className = 'timeslot-header';
-            slotTitle.textContent = `รอบเวลา: ${parseTimeFromSlot(slot)}`;
-            slotGroup.appendChild(slotTitle);
+            slotGroup.innerHTML = `<h3 class="timeslot-header">รอบเวลา: ${parseTimeFromSlot(slot)}</h3>`;
             const cardsGrid = document.createElement('div');
             cardsGrid.className = 'applicant-grid'; 
 
             applicantsBySlot[slot].forEach(app => {
                 const card = document.createElement('div');
                 let cardClasses = ['info-card']; 
-                if (app.Online) {
-                    cardClasses.push('online-card');
-                } else {
-                    cardClasses.push(app.status.toLowerCase()); 
-                }
-                if (app.isForfeited) {
-                    cardClasses.push('forfeited');
-                }
+                if (app.Online) cardClasses.push('online-card');
+                else cardClasses.push(app.status.toLowerCase()); 
+                
+                if (app.isForfeited) cardClasses.push('forfeited');
 
-                // --- Check completion dynamically using Config ---
+                // Check completion dynamically
                 let allScored = false;
                 if (app.interviewScores && typeof app.interviewScores === 'object') {
-                    const requiredScores = Database.config.getScoreKeys(); // Use config here
+                    const requiredScores = Database.config.getScoreKeys();
                     allScored = requiredScores.every(scoreKey =>
                         app.interviewScores.hasOwnProperty(scoreKey) &&
                         app.interviewScores[scoreKey] !== null &&
-                        app.interviewScores[scoreKey] !== undefined
+                        app.interviewScores[scoreKey] !== undefined &&
+                        app.interviewScores[scoreKey] !== -1 // Ensure not N/A (Optional check)
                     );
                 }
 
-                if (!app.isForfeited && allScored) {
-                    cardClasses.push('completed');
-                }
-
-                card.className = cardClasses.join(' '); 
-
-                if (activeApplicantId && parseInt(activeApplicantId, 10) === app.id) {
-                    card.classList.add('active-card');
-                }
+                if (!app.isForfeited && allScored) cardClasses.push('completed');
+                if (activeApplicantId && parseInt(activeApplicantId, 10) === app.id) card.classList.add('active-card');
 
                 card.dataset.applicantId = app.id; 
                 card.innerHTML = `
@@ -192,9 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p><strong>ชั้นปี:</strong> ${app.year}</p>
                 `;
                 card.addEventListener('click', () => {
-                    if (!app.isForfeited) {
-                         showScoringDetails(app.id, card);
-                    }
+                    if (!app.isForfeited) showScoringDetails(app.id, card);
                 });
                 cardsGrid.appendChild(card);
             });
@@ -203,7 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // Displays the detailed scoring form for a selected applicant
+    // ⭐️ Displays the detailed scoring form (REFACTORED TO BE DYNAMIC) ⭐️
     const showScoringDetails = (applicantId, clickedCardElement) => {
         const applicant = allData.find(a => a.id === applicantId);
         if (!applicant || applicant.isForfeited) {
@@ -211,20 +184,98 @@ document.addEventListener('DOMContentLoaded', () => {
               document.querySelectorAll('.info-card.active-card').forEach(card => card.classList.remove('active-card'));
              return;
         }
+        
         const scores = applicant.interviewScores || {};
         const details = applicant.interviewDetails || {};
+        
         document.querySelectorAll('.info-card.active-card').forEach(card => card.classList.remove('active-card'));
-        if (clickedCardElement) {
-            clickedCardElement.classList.add('active-card');
-        }
+        if (clickedCardElement) clickedCardElement.classList.add('active-card');
+        
         const onlineStatus = applicant.Online ? '<span style="color: purple; font-weight: bold;"> (Online Interview ⭐️)</span>' : '';
         const displaySlot = applicant.Online ? 'Online Special' : (applicant.interviewSlot || 'N/A');
         const imagePreviewHTML = applicant.applicantImage
             ? `<img src="${applicant.applicantImage}" alt="Applicant Photo">` 
             : `<p>ยังไม่มีรูปภาพ</p>`; 
 
-        // หมายเหตุ: ส่วน HTML นี้ยังคงรูปแบบเดิมเนื่องจากมี Text เฉพาะทางเยอะ
-        // แต่เราเปลี่ยน ID ของ textarea และ select ให้ตรงกับ pattern ของ Database.config (q1, q2a, ...)
+        // 1. แยกคำถามตามประเภทเพื่อจัด Layout
+        const appConfig = Database.config.QUESTIONS;
+        const appQuestion = appConfig.find(q => q.id === 'application'); // ใบสมัคร (Top Info)
+        const generalNote = appConfig.find(q => q.id === 'general');     // Note (Bottom)
+        const interviewQuestions = appConfig.filter(q => q.id !== 'application' && q.id !== 'general'); // คำถามสัมภาษณ์
+
+        // 2. สร้าง HTML สำหรับ Top Info (Grid Div 4)
+        // ถ้ามี config สำหรับ application ให้สร้าง dropdown, ถ้าไม่มีก็เว้นว่าง
+        let applicationScoreHTML = '';
+        if (appQuestion) {
+             applicationScoreHTML = `
+                <p style="display: flex; align-items: center; margin-top: 10px;">
+                    <strong>${appQuestion.text || 'คะแนนใบสมัคร'}:</strong>
+                    ${createScoreDropdown(appQuestion.id, appQuestion.label, scores[appQuestion.id], appQuestion.maxScore)}
+                </p>
+                <div style="margin-top: 5px;">
+                    <label for="detail-${appQuestion.id}" style="font-size: 14px; color: #555; display: block; margin-bottom: 3px;">โน้ตเกี่ยวกับใบสมัคร:</label>
+                    ${createDetailTextarea(appQuestion.id, details[appQuestion.id])}
+                </div>
+             `;
+        }
+
+        // 3. สร้าง HTML สำหรับคำถามสัมภาษณ์ (Grid Div 6) - Loop Dynamic
+        let questionsHTML = '<h3>คำถามสัมภาษณ์</h3>';
+        
+        interviewQuestions.forEach(q => {
+            // Check styles
+            let itemClass = 'interview-question-item';
+            if (q.isSubQuestion) itemClass += ' sub-question';
+            if (q.isSpecial) itemClass += ' special-question';
+
+            // Check choices (bullet points)
+            let choicesHTML = '';
+            if (q.choices && Array.isArray(q.choices)) {
+                choicesHTML = `<small><i><ul>${q.choices.map(c => `<li>${c}</li>`).join('')}</ul></i></small>`;
+            }
+
+            // Text Color
+            let textStyle = q.isSpecial ? 'color: #007bff;' : '';
+
+            // Build Left Side (Text + Score)
+            let leftSide = `
+                <div class="question-text">
+                    <p style="${textStyle}"><strong>${q.label})</strong> ${q.text || ''} ${choicesHTML}</p>
+                    ${q.type.includes('score') ? createScoreDropdown(q.id, q.label, scores[q.id], q.maxScore || 5) : ''}
+                </div>
+            `;
+
+            // Build Right Side (Detail/Textarea)
+            // Special Case: ถ้าเป็น score_only อาจจะจัด Layout ต่าง (แต่ในที่นี้ใช้ Grid เดิม)
+            let rightSideClass = 'question-input-area';
+            if (q.type === 'score_only') rightSideClass += ' score-only';
+
+            let rightSide = `
+                 <div class="${rightSideClass}">
+                    ${createDetailTextarea(q.id, details[q.id])}
+                 </div>
+            `;
+
+            questionsHTML += `
+                <div class="${itemClass}">
+                    ${leftSide}
+                    ${rightSide}
+                </div>
+            `;
+        });
+
+        // 4. สร้าง HTML สำหรับ General Note (Bottom)
+        let generalNoteHTML = '';
+        if (generalNote) {
+            generalNoteHTML = `
+                <div style="margin-top: 20px; margin-bottom: 20px;">
+                    <label for="detail-${generalNote.id}" style="font-size: 16px; font-weight: bold; color: #333; display: block; margin-bottom: 8px;">${generalNote.text}:</label>
+                    ${createDetailTextarea(generalNote.id, details[generalNote.id])}
+                </div>
+            `;
+        }
+
+        // 5. ประกอบร่างทั้งหมด
         if (scoringViewBody) {
             scoringViewBody.innerHTML = `
                 <div class="applicant-details-grid-parent">
@@ -239,14 +290,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <p><strong>รอบสัมภาษณ์:</strong> ${displaySlot}</p>
                         <p><a href="${applicant.applicationUrl}" target="_blank" rel="noopener noreferrer">ดูใบสมัคร (PDF)</a></p>
                        
-                        <p style="display: flex; align-items: center; margin-top: 10px;">
-                            <strong>คะแนนใบสมัคร:</strong>
-                            ${createScoreDropdown('score-application', 'Score Application', scores.application)}
-                        </p>
-                        <div style="margin-top: 5px;">
-                            <label for="detail-application" style="font-size: 14px; color: #555; display: block; margin-bottom: 3px;">โน้ตเกี่ยวกับใบสมัคร:</label>
-                            ${createDetailTextarea('detail-application', details.application)}
-                        </div>
+                        ${applicationScoreHTML}
                     </div></div>
                     
                     <div class="grid-div5"><div class="details-image-area">
@@ -259,173 +303,11 @@ document.addEventListener('DOMContentLoaded', () => {
          
                     <div class="grid-div6">
                         <form id="scoring-form" data-id="${applicant.id}">
-                            <h3>คำถามสัมภาษณ์</h3>
-
-                          
-                            <div class="interview-question-item">
-                                <div class="question-text"><p><strong>1)</strong> เวลาว่างชอบทำอะไรหรือมีงานอดิเรกที่ชอบทำมั้ย > ทำไมถึงชอบ?</p></div>
-                                <div class="question-input-area">${createDetailTextarea('detail-q1', details.q1)}</div>
-                            </div>
-                            <div class="interview-question-item">
-                                <div class="question-text">
-                                    <p><strong>2a)</strong> โดยปกติแล้วเรามีวิธีรับมือกับงานที่ท้าทายความสามารถยังไง?</p>
-                                    ${createScoreDropdown('score-q2a', 'Score Q2a', scores.q2a)}
-                                </div>
-                                <div class="question-input-area">
-                                    ${createDetailTextarea('detail-q2a', details.q2a)}
-                                </div>
-                            </div>
-                            <div class="interview-question-item sub-question">
-                                <div class="question-text">
-                                    <p><strong>2b)</strong> แล้วถ้าเป็นงานที่เราไม่คุ้นเคยจะรับมือยังไง?</p>
-                                    ${createScoreDropdown('score-q2b', 'Score Q2b', scores.q2b)}
-                                </div>
-                                <div class="question-input-area">
-                                    ${createDetailTextarea('detail-q2b', details.q2b)}
-                                </div>
-                            </div>
-                            <div class="interview-question-item">
-                                <div class="question-text"><p><strong>3)</strong> ตอนนี้มีงานอะไรที่รับผิดชอบอยู่บ้าง? วางแผนกิจกรรมมหาลัยในปีหน้า ๆ ไว้ยังไงบ้าง?</p></div>
-                                <div class="question-input-area">${createDetailTextarea('detail-q3', details.q3)}</div>
-                            </div>
-                            <div class="interview-question-item">
-                                <div class="question-text">
-                                     <p><strong>4a)</strong> ถ้าทำงานกลุ่มกับเพื่อนแล้วเพื่อนทำส่วนที่รับผิดชอบไม่ทัน?</p>
-                                     ${createScoreDropdown('score-q4a', 'Score Q4a', scores.q4a)}
-                                </div>
-                                <div class="question-input-area">
-                                     ${createDetailTextarea('detail-q4a', details.q4a)}
-                                </div>
-                            </div>
-                            <div class="interview-question-item sub-question">
-                                <div class="question-text">
-                                     <p><strong>4b)</strong> ถ้าเป็นเราในตอนนี้จะมีวิธีจัดการยังไง?</p>
-                                     ${createScoreDropdown('score-q4b', 'Score Q4b', scores.q4b)}
-                                </div>
-                                <div class="question-input-area">
-                                     ${createDetailTextarea('detail-q4b', details.q4b)}
-                                </div>
-                            </div>
-                          
-                            <div class="interview-question-item">
-                                <div class="question-text">
-                                     <p><strong>5)</strong> ก่อนหน้านี้เคยได้ยิน /เคยศึกษาเกี่ยวกับวิถีชีวิตความเป็นอยู่และปัญหากลุ่มชาติพันธุ์มาก่อนมั้ย?</p>
-                                     ${createScoreDropdown('score-q5', 'Score Q5', scores.q5)}
-                                </div>
-                                <div class="question-input-area">
-                                     ${createDetailTextarea('detail-q5', details.q5)}
-                                </div>
-                            </div>
-                         
-                            <div class="interview-question-item">
-                                <div class="question-text">
-                                    <p><strong>6)</strong> คาดหวังอะไรกับการได้ไปทำกิจกรรมอาสากับค่ายเรา?</p>
-                                    ${createScoreDropdown('score-q6', 'Score Q6', scores.q6)}
-                                </div>
-                                <div class="question-input-area">
-                                    ${createDetailTextarea('detail-q6', details.q6)}
-                                </div>
-                            </div>
-                           
-                            <div class="interview-question-item">
-                                <div class="question-text">
-                                    <p><strong>7a)</strong> นอกจากค่ายอาสาของชมรมแล้ว เราคิดว่าชมรมสามารถช่วยเหลือชาวเขาในรูปแบบอื่น ๆ ได้ยังไงบ้าง?</p>
-                                     ${createScoreDropdown('score-q7a', 'Score Q7a', scores.q7a)}
-                                </div>
-                                <div class="question-input-area">
-                                     ${createDetailTextarea('detail-q7a', details.q7a)}
-                                </div>
-                            </div>
-                           
-                             <div class="interview-question-item sub-question">
-                                <div class="question-text">
-                                     <p><strong>7b)</strong> แล้วถ้าหากติดค่ายอาสา ลงค่ายมาจะสะดวกมาสานต่อกิจกรรมนี้มั้ย?</p>
-                                     ${createScoreDropdown('score-q7b', 'Score Q7b', scores.q7b)}
-                                </div>
-                                <div class="question-input-area">
-                                     ${createDetailTextarea('detail-q7b', details.q7b)}
-                                </div>
-                            </div>
-                           
-                            <div class="interview-question-item">
-                                <div class="question-text">
-                                     <p><strong>8a)</strong> รู้จักชมรมของเรามาก่อนมั้ย > รู้จักแค่ไหน > ชอบอะไรในชมรมเรา?</p>
-                                     ${createScoreDropdown('score-q8a', 'Score Q8a', scores.q8a)}
-                                </div>
-                                <div class="question-input-area">
-                                     ${createDetailTextarea('detail-q8a', details.q8a)}
-                                </div>
-                            </div>
-                          
-                             <div class="interview-question-item sub-question">
-                                <div class="question-text">
-                                     <p><strong>8b)</strong> คิดว่าทำไมถึงต้องเป็นค่ายนี้?</p>
-                                     ${createScoreDropdown('score-q8b', 'Score Q8b', scores.q8b)}
-                                </div>
-                                <div class="question-input-area">
-                                     ${createDetailTextarea('detail-q8b', details.q8b)}
-                                </div>
-                            </div>
+                            ${questionsHTML}
                             
-                            <div class="interview-question-item">
-                                <div class="question-text"><p><strong>9)</strong> คำถามเลือกจากโครงที่ชอบสุด 1 ข้อ <small><i><ul>
-                                    <li>(สอน) ถ้าได้ขึ้นไปสอนน้องๆ อยากสอนวิชาอะไร ลองเสนอกิจกรรมการเรียนการสอนที่อยากทำ</li>
-                                    <li>(สอน) ถ้าเกิดน้องๆเขินอายกับพวกเรา เราจะมีวิธีเข้าหาน้องๆอย่างไร</li>
-                                    <li>(บำเพ็ญ) ถ้าได้มีโอกาสเป็นโครงบำเพ็ญ สามารถสร้างอะไรก็ได้ 1 อย่างบนค่าย อยากสร้างอะไรในระยะเวลาที่ขึ้นค่าย 8 วัน</li>
-                                    <li>(เรียน) ถ้าได้มีโอกาสไปพูดคุยกับชาวบ้าน สิ่งไหนที่เราอยากนำไปแลกเปลี่ยนเรียนรู้กับชาวบ้าน</li>
-                                    <li>(สวัส) ถ้าวันนั้นโครงอื่นๆทำงานหนักมาก ในฐานะโครงสวัสเราจะทำเมนู/เครื่องดื่มอะไรให้ชาวค่ายได้กิน</li>
-                                </ul></i></small></p></div>
-                                <div class="question-input-area">${createDetailTextarea('detail-q9', details.q9)}</div>
-                            </div>
-                         
-                            <div class="interview-question-item">
-                                <div class="question-text"><p><strong>10)</strong> คำถามเลือกจากโครงที่ชอบน้อยที่สุด 1 ข้อ <small><i><ul>
-                                    <li>(สอน) ถ้าเกิดเราเจอเด็กดื้อมากๆ ไม่ยอมฟัง คอยกวนเด็กคนอื่นตลอดเวลาเราจะทำยังไง</li>
-                                    <li>(สอน) ถ้าเกิดเราเจอเด็กที่ไม่จอยกับกิจกรรม ปลีกตัวออกจากกลุ่มเพื่อน งอแงไม่ยอมเข้าห้อง เราจะทำยังไง</li>
-                                    <li>(บำเพ็ญ)ถ้าเราได้ทำงานที่ไม่เคยทำมาก่อน แล้วทำผิดพลาด เราจะมีวิธีการแก้ไขอย่างไร</li>
-                                    <li>(เรียน)ถ้าวันไปโครงเรียน ชาวบ้านให้ชิมของนู่นนี่ แล้วก็ยื่นแอลกอฮอล์ให้ชิม แต่กฎค่ายห้าม เราจะมีวิธีการรับมือยังไง</li>
-                                    <li>(เรียน)หากมีชาวบ้านทักทายโดยใช้ภาษากะเหรี่ยง พูดภาษาไทยไม่ได้ เราจะมีวิธีสื่อสารกับเค้ายังไง</li>
-                                    <li>(สวัส) ถ้าเนื้อสัตว์ไม่พอในการทำอาหาร เราจะมีวิธีแก้ปัญหายังไง</li>
-                                    <li>(สวัส)ถ้าเราคำนวณปริมาณอาหารมื้อเที่ยงผิดพลาด ไม่เพียงพอต่อชาวค่าย เราจะมีวิธีแก้ปัญหายังไง</li>
-                                </ul></i></small></p></div>
-                                <div class="question-input-area">${createDetailTextarea('detail-q10', details.q10)}</div>
-                            </div>
-                         
-                            <div class="interview-question-item">
-                                <div class="question-text"><p><strong>11)</strong> เลือกคำถามโครงกลางคืนมาถาม 1 ข้อ <small><i><ul>
-                                    <li>Q1: หากย้อนเวลากลับไปได้ มีเรื่องอะไรที่อยากกลับไปแก้ไขมั้ย (เรื่องเล็กหรือใหญ่ก็ได้)</li>
-                                    <li>Q2: เคยสร้าง impact ในแง่บวกให้ใครสักคนมั้ย ถ้าเคยช่วยเล่าสิ่งที่เราเคยทำให้คนอื่นรู้สึกดีให้ฟังหน่อยได้มั้ย</li>
-                                    <li>Q3: เล่าวิธีมูฟออนจากวันแย่ๆของตัวเองให้ฟังหน่อยได้ไหม ปกติผ่านมาได้ยังไง</li>
-                                </ul></i></small></p></div>
-                                <div class="question-input-area">${createDetailTextarea('detail-q11', details.q11)}</div>
-                            </div>
-                           
-                            <div class="interview-question-item">
-                                <div class="question-text"><p><strong>12)</strong> ในแต่ละวันจะมีการร้องเพลงและพูดคุยกันตาม topic ต่างๆ เราสามารถแลกเปลี่ยนหรือรับฟังทุกคนได้มั้ย โอเครึป่าว?</p></div>
-                                <div class="question-input-area">${createDetailTextarea('detail-q12', details.q12)}</div>
-                            </div>
-                        
-                            <div class="interview-question-item">
-                                <div class="question-text">
-                                    <p><strong>13)</strong> กฎค่าย 9 ข้อ ตั้งมาเพื่อจุดประสงค์ที่อยากรบกวนชาวบ้านให้น้อยที่สุด (ทวนกฎค่ายให้ฟัง) คิดเห็นยังไงกับกฎค่าย มีคำถามเกี่ยวกับกฎค่ายหรือรู้สึกว่ามีข้อไหนที่ควรปรับแก้หรือยืดหยุ่นได้มั้ย?</p>
-                                    ${createScoreDropdown('score-q13', 'Score Q13', scores.q13)} 
-                                </div>
-                                <div class="question-input-area">${createDetailTextarea('detail-q13', details.q13)}</div> 
-                            </div>
-                         
-                            <div class="interview-question-item special-question">
-                                <div class="question-text"><p><strong>[พิเศษ]</strong> คิดว่าเข้ากับชมรมได้มั้ย? [ประเมินจากผู้สัมภาษณ์]</p></div>
-                                <div class="question-input-area score-only">
-                                     ${createScoreDropdown('score-qSpecial', 'Score QSpecial', scores.qSpecial)}
-                                </div>
-                            </div>
-                          
-                             <div style="margin-top: 20px; margin-bottom: 20px;">
-                                <label for="detail-general" style="font-size: 16px; font-weight: bold; color: #333; display: block; margin-bottom: 8px;">โน้ตเพิ่มเติม / สรุป:</label>
-                                ${createDetailTextarea('detail-general', details.general)}
-                            </div>
+                            ${generalNoteHTML}
+
                             <hr>
-                         
                             <div class="closing-remarks">
                                 <h4>สิ่งที่ควรบอก / Concerns:</h4>
                                 <ul><li>การเวียนโครง (โอเคมั้ย?)</li><li>การเดินทางไกล/นาน/โค้งเยอะ (ไหวมั้ย? กังวล?)</li><li>แมลง (แมงมุม, กิ้งกือ, ตะขาบ)</li><li>ห้องน้ำไม่สะดวกสบาย</li><li>ผู้สมัครมีข้อกังวลอื่น ๆ ?</li></ul>
@@ -455,49 +337,28 @@ document.addEventListener('DOMContentLoaded', () => {
             const isFirstLoad = allData.length === 0;
             allData = newData; 
 
-            if (isFirstLoad) {
-                populateDateFilter(); 
-            }
-
+            if (isFirstLoad) populateDateFilter(); 
             renderApplicantCards(); 
 
             // --- Attempt to show linked applicant after cards are rendered ---
             if (linkedApplicantId && !initialApplicantShown && allData.length > 0) {
                 const applicantToShow = allData.find(app => app.id == linkedApplicantId); 
-
                 if (applicantToShow && !applicantToShow.isForfeited) { 
                     const applicantDate = parseDateFromSlot(applicantToShow.interviewSlot);
                     const selectedDate = interviewDateFilter.value;
 
-                    if (applicantDate && applicantDate === selectedDate) {
-                        const cardElement = cardsContainer.querySelector(`.info-card[data-applicant-id="${linkedApplicantId}"]`);
-                        if (cardElement) {
-                            showScoringDetails(applicantToShow.id, cardElement); 
-                            initialApplicantShown = true; 
-                        } else {
-                             initialApplicantShown = true;
-                        }
-                    } else if (applicantDate && applicantDate !== selectedDate) {
+                    if (applicantDate && applicantDate !== selectedDate) {
                         const dateOptionExists = Array.from(interviewDateFilter.options).some(option => option.value === applicantDate);
-
-                        if (dateOptionExists) {
-                            interviewDateFilter.value = applicantDate; 
-                            renderApplicantCards(); 
-
-                            setTimeout(() => {
-                                const cardElement = cardsContainer.querySelector(`.info-card[data-applicant-id="${linkedApplicantId}"]`);
-                                if (cardElement) {
-                                    showScoringDetails(applicantToShow.id, cardElement);
-                                } 
-                                initialApplicantShown = true; 
-                            }, 0); 
-
-                        } else {
-                             initialApplicantShown = true;
-                        }
-                    } else {
-                         initialApplicantShown = true;
+                        if (dateOptionExists) interviewDateFilter.value = applicantDate;
+                        renderApplicantCards(); // Re-render with correct date
                     }
+                    
+                    // Delay slightly to ensure DOM is ready
+                    setTimeout(() => {
+                        const cardElement = cardsContainer.querySelector(`.info-card[data-applicant-id="${linkedApplicantId}"]`);
+                        if (cardElement) showScoringDetails(applicantToShow.id, cardElement);
+                        initialApplicantShown = true; 
+                    }, 50);
 
                 } else if (applicantToShow && applicantToShow.isForfeited) {
                     if(scoringViewBody) scoringViewBody.innerHTML = `<p>ผู้สมัคร ID ${linkedApplicantId} ได้สละสิทธิ์แล้ว</p>`;
@@ -530,25 +391,17 @@ document.addEventListener('DOMContentLoaded', () => {
         allData = [];
         tableSelectionView.classList.remove('hidden');
         applicantListView.classList.add('hidden');
-        if (scoringViewBody) {
-             scoringViewBody.innerHTML = '<p>กรุณาเลือกโต๊ะและผู้สมัคร</p>'; 
-        }
-        if (unsubscribe) {
-            unsubscribe(); 
-            unsubscribe = null;
-        }
+        if (scoringViewBody) scoringViewBody.innerHTML = '<p>กรุณาเลือกโต๊ะและผู้สมัคร</p>'; 
+        if (unsubscribe) { unsubscribe(); unsubscribe = null; }
     });
 
     interviewDateFilter.addEventListener('change', () => {
         renderApplicantCards(); 
         scoringViewBody.innerHTML = '<p>กรุณาเลือกผู้สมัครเพื่อดูรายละเอียด</p>'; 
-        document.querySelectorAll('.info-card.active-card').forEach(card => {
-            card.classList.remove('active-card');
-        });
+        document.querySelectorAll('.info-card.active-card').forEach(card => card.classList.remove('active-card'));
     });
 
     if (scoringViewBody) {
-
         scoringViewBody.addEventListener('click', (e) => {
             if (e.target.id === 'upload-image-btn') {
                 const uploadInput = scoringViewBody.querySelector('#applicant-image-upload');
@@ -556,7 +409,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // ⭐️⭐️⭐️ [แก้ไข] Logic การ Submit แบบ Dynamic ⭐️⭐️⭐️
+        // ⭐️ Generic Submit Handler (Works with any config) ⭐️
         scoringViewBody.addEventListener('submit', (e) => {
             if (e.target.id === 'scoring-form') {
                 e.preventDefault(); 
@@ -566,20 +419,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const interviewScores = {};
                 const interviewDetails = {};
 
-                // วน Loop ผ่าน Config เพื่อเก็บค่า (ไม่ต้องเขียน Hardcode ทีละบรรทัด)
+                // Loop ตาม Config เพื่อดึงค่า
                 Database.config.QUESTIONS.forEach(q => {
-                    // 1. เก็บ Scores
                     if (q.type.includes('score')) {
                         const select = document.getElementById(`score-${q.id}`);
-                        // ถ้าหาไม่เจอ หรือเป็นค่าว่าง ให้เป็น -1 (N/A)
                         interviewScores[q.id] = select ? parseFloat(select.value) : -1;
                     }
-                    
-                    // 2. เก็บ Details (Textarea)
                     const textEl = document.getElementById(`detail-${q.id}`);
-                    if (textEl) {
-                        interviewDetails[q.id] = textEl.value || '';
-                    }
+                    if (textEl) interviewDetails[q.id] = textEl.value || '';
                 });
 
                 console.log("Saving Scores (Dynamic):", interviewScores);
@@ -590,35 +437,28 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        // ⭐️ Dynamic Color Change on Selection ⭐️
         scoringViewBody.addEventListener('change', (e) => {
             if (e.target.classList.contains('score-select')) {
                 const select = e.target;
+                const maxScore = parseFloat(select.dataset.maxScore || 5);
+                const selectedValue = parseFloat(select.value);
+
+                // Reset Class
                 select.className = 'score-select'; 
-                if (select.id === 'score-application') {
-                    select.style.width = '70px';
-                    select.style.marginLeft = '10px';
+                
+                // Calculate color class dynamically
+                let cssClass = 'score-na';
+                if (selectedValue >= 0) {
+                     const percentage = selectedValue / maxScore;
+                     if (percentage >= 0.9) cssClass = 'score-5';
+                     else if (percentage >= 0.7) cssClass = 'score-4';
+                     else if (percentage >= 0.5) cssClass = 'score-3';
+                     else if (percentage >= 0.3) cssClass = 'score-2';
+                     else if (selectedValue > 0) cssClass = 'score-1';
+                     else cssClass = 'score-0';
                 }
-
-                const selectedOption = select.options[select.selectedIndex];
-                const selectedValue = parseFloat(selectedOption.value);
-                let cssClass = 'score-na'; 
-
-                 if (select.id === 'score-application') {
-                    if (selectedValue >= 9) cssClass = 'score-5';
-                    else if (selectedValue >= 7) cssClass = 'score-4';
-                    else if (selectedValue >= 5) cssClass = 'score-3';
-                    else if (selectedValue >= 3) cssClass = 'score-2';
-                    else if (selectedValue >= 1) cssClass = 'score-1';
-                    else if (selectedValue >= 0) cssClass = 'score-0';
-                 } else { 
-                    if (selectedValue === 5) cssClass = 'score-5';
-                    else if (selectedValue === 4) cssClass = 'score-4';
-                    else if (selectedValue === 3) cssClass = 'score-3';
-                    else if (selectedValue === 2) cssClass = 'score-2';
-                    else if (selectedValue === 1) cssClass = 'score-1';
-                    else if (selectedValue === 0) cssClass = 'score-0';
-                 }
-                select.classList.add(cssClass); 
+                select.classList.add(cssClass);
             }
 
             if (e.target.id === 'applicant-image-upload') {
@@ -653,7 +493,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         previewContainer.innerHTML = `<p>อัปโหลดสำเร็จ! กำลังบันทึก...</p>`;
 
                         uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
-                            console.log('File available at', downloadURL);
                             Database.updateApplicant(applicantId, { applicantImage: downloadURL });
                             previewContainer.innerHTML = `<img src="${downloadURL}" alt="Applicant Photo">`;
                         });
@@ -691,5 +530,4 @@ document.addEventListener('DOMContentLoaded', () => {
             applicantListView.classList.add('hidden');
         }
     }
-
 });
