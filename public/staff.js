@@ -89,7 +89,7 @@ const renderTimeslotDashboard = () => {
 
     const generatedTimes = generateTimeSlots('16:30', '20:30', 30);
     const allTimeSet = new Set([...dataTimes, ...generatedTimes]);
-    const excludedTimes = ['18:50', '19:10', '19:30', '19:50', '20:10', '20:30'];
+    const excludedTimes = ['18:50', '19:10', '19:50', '20:10', '20:30'];
     const sortedTimes = Array.from(allTimeSet)
                       .sort((a,b) => a.localeCompare(b))
                       .filter(time => !excludedTimes.includes(time));
@@ -105,8 +105,16 @@ const renderTimeslotDashboard = () => {
     });
     tableHTML += '</tr></thead><tbody>';
 
+    const tableNames = {
+    1: "ดีดี ซิ่ง",
+    2: "นนท์ หงษ์",
+    3: "โมกข์ บอส",
+    4: "ฮิม พาแว",
+    5: "คิดตี้ แคร์"};
+
     tables.forEach(tableNum => {
-        tableHTML += `<tr><td><strong>โต๊ะ ${tableNum}</strong></td>`;
+        const tableName = tableNames[tableNum] ? ` (${tableNames[tableNum]})` : '';
+        tableHTML += `<tr><td><strong>โต๊ะ ${tableNum} ${tableName}</strong></td>`;
         sortedTimes.forEach(time => {
             const timePattern = time.replace(':', '[.:]');
             const slotStartPattern = `${selectedDate}.*${timePattern}`;
