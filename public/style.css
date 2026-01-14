@@ -211,7 +211,7 @@ button:hover { background-color: #f0f0f0; }
     box-shadow: 0 1px 3px rgba(0,0,0,0.08); display: flex; justify-content: space-between;
     align-items: center; border-left: 5px solid #6c757d; cursor: default;
 }
-.staff-card.arrived { border-left-color: #28a745; }
+.staff-card.arrived { border-left-color: #28a745; background-color: #e4ffeb;}
 .staff-card h4 { margin: 0 0 5px 0; font-size: 16px; }
 .staff-card p { margin: 3px 0; font-size: 14px; color: #555; }
 .staff-card .interview-slot { font-size: 12px; color: #888; margin-top: 5px; }
