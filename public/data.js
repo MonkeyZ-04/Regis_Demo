@@ -41,7 +41,7 @@ const APP_CONFIG = {
             id: 'q2a', 
             label: '2a', 
             type: 'score_text', 
-            weight: 1, 
+            weight: 0.25, 
             maxScore: 5,
             text: 'โดยปกติแล้วเรามีวิธีรับมือกับงานที่ยากและสำคัญยังไง? (เช่น อาจไม่มั่นใจว่าตัวเองจะสามารถทำได้มั้ย)' 
         },
@@ -49,7 +49,7 @@ const APP_CONFIG = {
             id: 'q2b', 
             label: '2b', 
             type: 'score_text', 
-            weight: 1, 
+            weight: 0.25, 
             maxScore: 5,
             isSubQuestion: true,
             text: 'แล้วถ้าเป็นงานที่เราไม่คุ้นเคยหรือไม่เคยทำ มาแบบฉับพลันจะรับมือยังไง?' 
@@ -62,43 +62,70 @@ const APP_CONFIG = {
         },
         // --- Page 2 ---
         { 
-            id: 'q4', 
-            label: '4', 
+            id: 'q4a', 
+            label: '4a', 
+            type: 'score_text', 
+            weight: 2, 
+            maxScore: 5,
+            text: 'ถ้าทำงานกลุ่มกับเพื่อนแล้วเพื่อนทำส่วนที่รับผิดชอบไม่ทัน > คิดว่าเป็นเพราะอะไรได้บ้าง?' 
+        },
+                { 
+            id: 'q4b', 
+            label: '4b', 
             type: 'score_text', 
             weight: 1, 
             maxScore: 5,
-            text: 'ถ้าทำงานกลุ่มกับเพื่อนแล้วเพื่อนทำส่วนที่รับผิดชอบไม่ทัน > คิดว่าเป็นเพราะอะไรได้บ้าง? > ถ้าเป็นเราในตอนนี้จะมีวิธีจัดการยังไง?' 
+            isSubQuestion: true,
+            text: 'ถ้าเป็นเราในตอนนี้จะมีวิธีจัดการยังไง?' 
         },
         // --- Page 3 ---
         { 
-            id: 'q5', 
-            label: '5', 
+            id: 'q5a', 
+            label: '5a', 
             type: 'score_text', 
-            weight: 1, 
+            weight: 0.75, 
             maxScore: 5,
-            text: 'ก่อนหน้านี้เคยได้ยิน/เคยศึกษาเกี่ยวกับวิถีชีวิตความเป็นอยู่และปัญหากลุ่มชาติพันธุ์มาก่อนมั้ย? เล่าให้ฟังถึงมุมมองของเราต่อกลุ่มชาติพันธุ์หน่อย' 
+            text: 'ก่อนหน้านี้เคยได้ยิน/เคยศึกษาเกี่ยวกับวิถีชีวิตความเป็นอยู่และปัญหากลุ่มชาติพันธุ์มาก่อนมั้ย?' 
+        },
+                { 
+            id: 'q5b', 
+            label: '5b', 
+            type: 'score_text', 
+            weight: 1.5, 
+            maxScore: 5,
+            isSubQuestion: true,
+            text: 'เล่าให้ฟังถึงมุมมองของเราต่อกลุ่มชาติพันธุ์หน่อย' 
         },
         // --- Page 4 ---
         { 
-            id: 'q6', 
-            label: '6', 
+            id: 'q6a', 
+            label: '6a', 
             type: 'score_text', 
             weight: 1, 
             maxScore: 5,
-            text: 'ปกติชมรมเราจะจัดค่ายยาวเป็นหลัก ถ้าติดค่ายนี้จะมาช่วยสานต่อตอนค่ายยาวมั้ย? คาดหวังกิจกรรมอาสาเช่นการทำค่ายแบบ HTC ยังไง?' 
+            text: 'ปกติชมรมเราจะจัดค่ายยาวเป็นหลัก ถ้าติดค่ายนี้จะมาช่วยสานต่อตอนค่ายยาวมั้ย?' 
+        },
+                { 
+            id: 'q6b', 
+            label: '6b', 
+            type: 'score_text', 
+            weight: 2, 
+            maxScore: 5,
+            isSubQuestion: true,
+            text: 'คาดหวังกิจกรรมอาสาเช่นการทำค่ายแบบ HTC ยังไง?' 
         },
         // ส่วนนี้ไม่มีคำถามเป็น Text แต่เป็นเกณฑ์ประเมินจาก PDF (Q7 Area)
         { 
-            id: 'q7_questioning', 
-            label: '7 (Skill)', 
+            id: 'q7a_questioning', 
+            label: '7a (Skill)', 
             type: 'score_text', 
-            weight: 1, 
+            weight: 0.75, 
             maxScore: 5,
             text: 'ทักษะการตั้งคำถาม (Questioning Skill) [ประเมินจากการพูดคุย]' 
         },
         { 
-            id: 'q7_openmind', 
-            label: '7 (Mind)', 
+            id: 'q7b_openmind', 
+            label: '7b (Mind)', 
             type: 'score_text', 
             weight: 1, 
             maxScore: 5,
@@ -132,7 +159,7 @@ const APP_CONFIG = {
             id: 'q10', 
             label: '10', 
             type: 'text', 
-            text: 'เลือกคำถามโครงกลางคืนมาถาม 1 ข้อ (ให้ผู้สมัครเลือก)',
+            text: 'เลือกคำถามโครงกลางคืนมาถาม 1 ข้อ (ให้คนสัมเลือก)',
             choices: [
                 'Q1: หากย้อนเวลากลับไปได้ มีเรื่องอะไรที่อยากกลับไปแก้ไขมั้ย',
                 'Q2: เคยสร้าง impact ในแง่บวกให้ใครสักคนมั้ย',
@@ -150,7 +177,7 @@ const APP_CONFIG = {
             id: 'q12', 
             label: '12', 
             type: 'score_text', 
-            weight: 1, 
+            weight: 0, 
             maxScore: 5,
             text: 'กฎค่าย 8 ข้อ (ทวนกฎให้ฟัง) คิดเห็นยังไงกับกฎค่าย? มีข้อไหนที่ควรปรับแก้หรือยืดหยุ่นได้มั้ย?', 
             choices: [
@@ -169,7 +196,7 @@ const APP_CONFIG = {
             id: 'assess_club', 
             label: 'Club Fit', 
             type: 'score_text', 
-            weight: 2, 
+            weight: 0, 
             maxScore: 5,
             isSpecial: true,
             text: '(HTC Style) - คิดว่าเข้ากับชมรมได้มั้ย?' 
@@ -178,7 +205,7 @@ const APP_CONFIG = {
             id: 'assess_camp', 
             label: 'Camp Fit', 
             type: 'score_text', 
-            weight: 2, 
+            weight: 1.5, 
             maxScore: 5,
             isSpecial: true,
             text: '(Camp) - คิดว่าเหมาะกับค่ายศึกษาแค่ไหน?' 
