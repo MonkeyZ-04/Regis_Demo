@@ -26,21 +26,56 @@ document.addEventListener('DOMContentLoaded', () => {
     const SCORE_LABELS = Database.config.getScoreLabels();
     const SCORE_WEIGHTS = Database.config.getScoreWeights();
 
-    // ⭐️ Calculate Total Score (with rounding down .5) ⭐️
+    // ⭐️ Calculate Total Score (Modified Logic for Club Fit Multiplier) ⭐️
     const calculateTotalScore = (scores) => {
         if (!scores || typeof scores !== 'object') return 0; 
-        let total = 0;
         
+        // กำหนด Multiplier ตามคะแนน assess_club (0-5)
+        const CLUB_FIT_MULTIPLIERS = {
+            0: 0.679,
+            1: 0.786,
+            2: 0.893,
+            3: 1.0,
+            4: 1.107,
+            5: 1.214
+        };
+
+        let interviewSum = 0;
+        let applicationScore = 0;
+        let clubFitScoreRaw = -1;
+
         SCORE_KEYS.forEach(key => {
             const numericScore = parseFloat(scores[key]); 
             const weight = SCORE_WEIGHTS[key] || 0; 
 
             if (!isNaN(numericScore) && numericScore >= 0) {
-                // ⭐️ ปัดเศษ .5 ทิ้งก่อนคูณน้ำหนัก (ตาม Requirement)
+                // ⭐️ ปัดเศษ .5 ทิ้งก่อนคูณน้ำหนัก (ตาม Requirement เดิม)
                 const scoreToCalc = Math.floor(numericScore);
-                total += (scoreToCalc * weight);
+
+                if (key === 'assess_club') {
+                    // เก็บไว้หา Multiplier (ไม่นำไปบวกใน interviewSum)
+                    clubFitScoreRaw = scoreToCalc;
+                } else if (key === 'application') {
+                    // ⭐️ คะแนนใบสมัคร Weight = 1.5 (แยกออกมาบวกทีหลัง)
+                    applicationScore = scoreToCalc * 1.5;
+                } else {
+                    // ⭐️ คะแนนพาทสัมภาษณ์ (Interview Part) คูณน้ำหนักตามปกติ
+                    interviewSum += (scoreToCalc * weight);
+                }
             }
         });
+
+        // ⭐️ หาค่า Multiplier จาก assess_club
+        let multiplier = 1.0; // Default ถ้าไม่มีคะแนน
+        if (clubFitScoreRaw !== -1) {
+            // ถ้ามีคะแนน ให้ใช้ค่าจากตาราง ถ้าไม่มีในตาราง (เช่น >5) ให้ใช้ 1.0 หรือค่าสูงสุดตามที่ต้องการ (ในที่นี้ใช้ fallback เป็น 1.0)
+            if (CLUB_FIT_MULTIPLIERS.hasOwnProperty(clubFitScoreRaw)) {
+                multiplier = CLUB_FIT_MULTIPLIERS[clubFitScoreRaw];
+            }
+        }
+
+        // ⭐️ สูตร: (คะแนนสัมภาษณ์รวม * Multiplier) + คะแนนใบสมัคร
+        const total = (interviewSum * multiplier) + applicationScore;
         
         return Math.round(total * 100) / 100;
     };
@@ -140,7 +175,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 SCORE_KEYS.forEach(key => {
                     const label = SCORE_LABELS[key] || key; 
                     const scoreValue = formatScore(scores[key]); 
-                    breakdownHtml += `<span class="score-pair"><span class="score-label">${label}:</span> <span class="score-value">${scoreValue}</span></span>`;
+                    
+                    // Highlight ตัวคูณ (Assess Club) และ Application ให้เห็นชัดขึ้น
+                    let style = '';
+                    if (key === 'assess_club') style = 'color: #d63384; font-weight: bold;';
+                    if (key === 'application') style = 'color: #0d6efd; font-weight: bold;';
+
+                    breakdownHtml += `<span class="score-pair" style="${style}"><span class="score-label">${label}:</span> <span class="score-value">${scoreValue}</span></span>`;
                 });
                 breakdownHtml += '</div>';
 

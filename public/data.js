@@ -26,7 +26,7 @@ const APP_CONFIG = {
             id: 'application', 
             label: 'ใบสมัคร', 
             type: 'score_text', 
-            weight: 1, 
+            weight: 1.5, 
             maxScore: 10,
             text: 'คะแนนใบสมัคร' 
         },
