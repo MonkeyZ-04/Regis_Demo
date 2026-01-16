@@ -127,7 +127,7 @@ const APP_CONFIG = {
             id: 'q7b_openmind', 
             label: '7b (Mind)', 
             type: 'score_text', 
-            weight: 1, 
+            weight: 2, 
             maxScore: 5,
             text: 'การเปิดใจ (Open-mindedness) [ประเมินจากการพูดคุย]' 
         },
@@ -136,7 +136,7 @@ const APP_CONFIG = {
             id: 'q8a', 
             label: '8a', 
             type: 'score_text', 
-            weight: 1, 
+            weight: 0.5, 
             maxScore: 5,
             text: 'รู้จักชมรมของเรามาก่อนมั้ย > รู้จักแค่ไหน > ชอบอะไรในชมรมเรา?' 
         },
@@ -144,7 +144,7 @@ const APP_CONFIG = {
             id: 'q8b', 
             label: '8b', 
             type: 'score_text', 
-            weight: 1, 
+            weight: 0.5, 
             maxScore: 5,
             isSubQuestion: true,
             text: 'คิดว่าทำไมถึงต้องเป็นค่ายนี้?' 
