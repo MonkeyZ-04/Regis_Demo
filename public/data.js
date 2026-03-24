@@ -4,15 +4,15 @@
 // 1. Firebase Configuration (รวมศูนย์ที่นี่)
 // ==========================================
 const firebaseConfig = {
-    apiKey: "AIzaSyAwl3WMBn3vz55uV2GSQFf3mljJiA1lpPk",
-    authDomain: "learningcamp.firebaseapp.com",
-    databaseURL: "https://learningcamp-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "learningcamp",
-    storageBucket: "learningcamp.firebasestorage.app",
-    messagingSenderId: "1021844432990",
-    appId: "1:1021844432990:web:7ea299f90d6cf746f66ccf",
-    measurementId: "G-1L2N2XFLV8"
-  };
+  apiKey: "AIzaSyAMV5RKEvHYh1keA_QZxM5c7xBPhQXZfnE",
+  authDomain: "raincamp-779ce.firebaseapp.com",
+  projectId: "raincamp-779ce",
+  storageBucket: "raincamp-779ce.firebasestorage.app",
+  databaseURL: "https://raincamp-779ce-default-rtdb.asia-southeast1.firebasedatabase.app",
+  messagingSenderId: "577670678118",
+  appId: "1:577670678118:web:b982365d2c2e2af7118fa7",
+  measurementId: "G-R8G3LEC1VZ"
+};
 
 // ==========================================
 // 2. Application Configuration
