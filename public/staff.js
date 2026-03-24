@@ -45,7 +45,7 @@ const generateTimeSlots = (startStr, endStr, intervalMinutes) => {
 
 const parseDateTime = (slotString) => {
     if (!slotString) return { date: null, time: null, fullDate: null };
-    const dateMatch = slotString.match(/(วันที่|วันที) \d+ มกราคม/);
+    const dateMatch = slotString.match(/(วันที่|วันที) \d+ มีนาคม/); // แก้เป็น มีนาคม
     const datePart = dateMatch ? dateMatch[0].replace('วันที', 'วันที่') : null;
     const timeMatch = slotString.match(/(\d{2}[.:]\d{2})/);
     const timePart = timeMatch ? timeMatch[0] : null;
@@ -54,7 +54,7 @@ const parseDateTime = (slotString) => {
         const day = parseInt(datePart.match(/\d+/)[0], 10);
         const [hour, minute] = timePart.split(/[.:]/).map(Number);
         const now = new Date();
-        fullDate = new Date(now.getFullYear(), 0, day, hour, minute); // 0 = January
+        fullDate = new Date(now.getFullYear(), 2, day, hour, minute); 
     }
     return { date: datePart, time: timePart, fullDate: fullDate };
 };
@@ -75,25 +75,15 @@ const renderTimeslotDashboard = () => {
         return;
     }
 
-    const dataTimes = [...new Set(
-        allData
-            .filter(app => !app.Online)
-            .map(app => app.interviewSlot)
-            .filter(Boolean)
-            .filter(slot => slot.includes(selectedDate))
-            .map(slot => {
-                const parsedTime = parseDateTime(slot).time;
-                return parsedTime ? parsedTime.replace('.', ':') : null;
-            })
-    )].filter(Boolean);
+    // กำหนดรอบเวลาตายตัวตามวันที่
+    let sortedTimes = [];
+    if (selectedDate === 'วันที่ 26 มีนาคม') {
+        sortedTimes = ['16:40', '17:05', '17:30', '17:55', '18:20', '18:55', '19:20', '19:45', '20:10'];
+    } else if (selectedDate === 'วันที่ 27 มีนาคม') {
+        sortedTimes = ['16:40', '17:05', '17:30', '17:55', '18:20', '18:45'];
+    }
 
-    const generatedTimes = generateTimeSlots('16:30', '20:30', 30);
-    const allTimeSet = new Set([...dataTimes, ...generatedTimes]);
-    const excludedTimes = ['18:50', '19:10', '19:50', '20:10', '20:30'];
-    const sortedTimes = Array.from(allTimeSet)
-                      .sort((a,b) => a.localeCompare(b))
-                      .filter(time => !excludedTimes.includes(time));
-    const tables = Array.from({ length: 5 }, (_, i) => i + 1);
+    const tables = Array.from({ length: 9 }, (_, i) => i + 1); // กำหนดสูงสุดที่ 9 โต๊ะ
     const now = new Date();
 
     let tableHTML = '<table><thead><tr><th>โต๊ะ \\ เวลา</th>';
@@ -105,17 +95,30 @@ const renderTimeslotDashboard = () => {
     });
     tableHTML += '</tr></thead><tbody>';
 
-    const tableNames = {
-    1: "ดีดี ซิ่ง",
-    2: "นนท์ หงษ์",
-    3: "โมกข์ บอส",
-    4: "ฮิม พาแว",
-    5: "คิดตี้ แคร์"};
+    // คงชื่อโต๊ะเดิมไว้ (เพิ่มชื่อโต๊ะ 6-9 ได้ในอนาคต)
+    const tableNames = { 1: "ดีดี เฌอ", 2: "นัทตี้ นนท์", 3: "เบน เมจิ", 4: "สอง ไอซ์", 5: "คิมหันต์ แพท", 6: "อิ๊งค์ เป้", 7: "ซิ่ง บอส", 8: "บีม วิน", 9: "ภู โรม" };
 
     tables.forEach(tableNum => {
-        const tableName = tableNames[tableNum] ? ` (${tableNames[tableNum]})` : '';
-        tableHTML += `<tr><td><strong>โต๊ะ ${tableNum} ${tableName}</strong></td>`;
+        // เช็กว่าหากเป็นโต๊ะ 9 แต่ไม่ใช่วันที่ 27 หรือช่วงเวลาอื่น จะไม่ให้มีแถวนี้เลยหรือไม่ 
+        // ในที่นี้เราจะแสดงแถวโต๊ะ 9 แต่ปิดทึบช่องที่ไม่มีสัมภาษณ์
+        
+        tableHTML += `<tr><td><strong>โต๊ะ ${tableNum} ${tableNames[tableNum] ? ` (${tableNames[tableNum]})` : ''}</strong></td>`;
+        
         sortedTimes.forEach(time => {
+            // เงื่อนไขพิเศษสำหรับโต๊ะ 9
+            let showCell = true;
+            if (tableNum === 9) {
+                const validTimesForTable9 = ['17:55', '18:20', '18:45'];
+                if (selectedDate !== 'วันที่ 27 มีนาคม' || !validTimesForTable9.includes(time)) {
+                    showCell = false; // นอกช่วงเวลาให้ปิดทึบ
+                }
+            }
+
+            if (!showCell) {
+                tableHTML += `<td style="background-color: #e0e0e0; cursor: not-allowed;">-</td>`;
+                return;
+            }
+
             const timePattern = time.replace(':', '[.:]');
             const slotStartPattern = `${selectedDate}.*${timePattern}`;
 
@@ -127,18 +130,13 @@ const renderTimeslotDashboard = () => {
 
             const slotForCell = applicant ? applicant.interviewSlot : `${selectedDate} ${time}`;
             const cellAttributes = `data-table="${tableNum}" data-slot="${slotForCell}"`;
+            
             if (applicant) {
-                // ⭐️ Build list of classes ⭐️
                 let statusClasses = ['busy'];
-                if (applicant.isForfeited) { // ⭐️ 1. เช็กสละสิทธิ์ก่อน (สำคัญสุด)
-                    statusClasses.push('forfeited-in-table');
-                } else if (applicant.Online) { // 2. เช็ก Online
-                    statusClasses.push('online-in-table');
-                } else if (applicant.status === 'Arrived') { // 3. เช็ก Arrived
-                    statusClasses.push('arrived-in-table');
-                } else if (applicant.status === 'Pending' && applicant.isCalled) { // ⭐️ Check for called status here ⭐️
-                    statusClasses.push('called-in-table');
-                }
+                if (applicant.isForfeited) statusClasses.push('forfeited-in-table');
+                else if (applicant.Online) statusClasses.push('online-in-table');
+                else if (applicant.status === 'Arrived') statusClasses.push('arrived-in-table');
+                else if (applicant.status === 'Pending' && applicant.isCalled) statusClasses.push('called-in-table');
 
                 tableHTML += `<td class="${statusClasses.join(' ')}" ${cellAttributes} data-applicant-id="${applicant.id}" draggable="true">${applicant.nickname} ${applicant.Online ? '⭐️' : ''}</td>`;
             } else {
@@ -236,7 +234,7 @@ const renderCheckinBoard = () => {
                 </div>
                 <div class="action-item">
                     <label>โต๊ะ:</label>
-                    <select class="table-select-dropdown">${[1,2,3,4,5].map(n => `<option value="${n}" ${n === app.table ? 'selected' : ''}>${n}</option>`).join('')}</select>
+                    <select class="table-select-dropdown">${[1,2,3,4,5,6,7,8,9].map(n => `<option value="${n}" ${n === app.table ? 'selected' : ''}>${n}</option>`).join('')}</select>
                 </div>` : '<p style="font-size: 12px; color: purple; text-align: right;"><i>Online Interview</i></p>'
                 }
                 <div class="action-item">${!app.Online && app.status === 'Pending' ? `<button class="check-in-btn">Check-in</button>` : ''}</div>

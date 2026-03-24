@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         adminOverview.innerHTML = ''; 
         const columns = {};
-        const tablesToDisplay = (selectedTable === 'all') ? Array.from({ length: 5 }, (_, i) => i + 1) : [parseInt(selectedTable, 10)];
+        const tablesToDisplay = (selectedTable === 'all') ? Array.from({ length: 9 }, (_, i) => i + 1) : [parseInt(selectedTable, 10)];
 
         tablesToDisplay.forEach(tableNum => { columns[`table-${tableNum}`] = []; });
         filteredBoardData.forEach(item => {

@@ -98,7 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const parseDateFromSlot = (slotString) => {
         if (!slotString) return null;
-        const dateMatch = slotString.match(/(วันที่|วันที) \d+ มกราคม/);
+        const dateMatch = slotString.match(/(วันที่|วันที) \d+ มีนาคม/);
         return dateMatch ? dateMatch[0].replace('วันที', 'วันที่') : null;
     };
 
@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
             interviewDateFilter.appendChild(option);
         });
 
-        const preferredDefault = "วันที่ 15 มกราคม";
+        const preferredDefault = "วันที่ 26 มีนาคม";
         if (dates.includes(preferredDefault)) {
             interviewDateFilter.value = preferredDefault; 
         } else if (currentVal && dates.includes(currentVal)) {
