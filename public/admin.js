@@ -151,11 +151,14 @@ document.addEventListener('DOMContentLoaded', () => {
                              <span class="ranking-number">${index + 1}.</span>
                              <span class="ranking-name">${applicant.firstName} (${applicant.nickname} ปี ${(applicant.year || '').replace(/[^0-9]/g, '')}) โต๊ะ ${applicant.table}</span>
                              <span class="ranking-total-score">รวม: ${formatScore(totalScore)}</span>
+                             
+                             <button onclick="event.stopPropagation(); showApplicantChart(${applicant.id});" style="background-color: #6f42c1; color: white; border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 12px; margin-left: 10px;">📊 ดูกราฟวิเคราะห์</button>
+
                         </div>
                         ${breakdownHtml}
                     </div>
                 `;
-                rankedListContainer.appendChild(itemDiv); 
+                rankedListContainer.appendChild(itemDiv);
             });
         }
     }
@@ -178,4 +181,111 @@ document.addEventListener('DOMContentLoaded', () => {
             if (adminOverview) renderAdminView(); 
         });
     }
+
+    // ==========================================
+// [ ระบบวิเคราะห์คะแนน Radar Chart ]
+// ==========================================
+let radarChartInstance = null;
+
+// 1. จัดกลุ่มเกณฑ์การประเมิน (Grouping) แบ่งตามสีและหัวข้อ
+const scoreCategories = {
+    'การรับมือและแก้ปัญหา': { ids: ['q2a', 'q2b'], color: '#ff9f40' },      // สีส้ม
+    'การทำงานเป็นทีม': { ids: ['q4a', 'q4b'], color: '#4bc0c0' },           // สีเขียวมิ้นต์
+    'ความเข้าใจชาติพันธุ์': { ids: ['q5a', 'q5b'], color: '#9966ff' },         // สีม่วง
+    'แรงจูงใจและความตั้งใจ': { ids: ['q6', 'q7a', 'q7b'], color: '#ff6384' }, // สีชมพูแดง
+    'ความเข้ากับชมรม (Club Fit)': { ids: ['q8a', 'q8b', 'assess_club'], color: '#36a2eb' }, // สีฟ้า
+    'กฎระเบียบและการปรับตัว': { ids: ['q14'], color: '#ffcd56' }            // สีเหลือง
+};
+
+// 2. ฟังก์ชันเปิดหน้าต่างกราฟ
+window.showApplicantChart = (applicantId) => {
+    const applicant = allData.find(a => a.id === applicantId);
+    if (!applicant) return;
+
+    document.getElementById('chart-applicant-name').innerText = `วิเคราะห์คะแนน: ${applicant.firstName} (${applicant.nickname})`;
+    
+    const scores = applicant.interviewScores || {};
+    const labels = Object.keys(scoreCategories);
+    const dataPoints = [];
+    const borderColors = [];
+    
+    let detailsHTML = '';
+
+    // คำนวณค่าเฉลี่ยแต่ละด้าน
+    labels.forEach(catName => {
+        const cat = scoreCategories[catName];
+        let total = 0, count = 0;
+        let scoreBreakdown = '';
+        
+        cat.ids.forEach(qId => {
+            if (scores[qId] !== undefined) {
+                const s = parseFloat(scores[qId]);
+                total += s;
+                count++;
+                scoreBreakdown += `<span style="font-size: 12px; background: #eee; padding: 2px 5px; border-radius: 3px; margin-right: 3px;">${qId}: ${s}</span>`;
+            }
+        });
+        
+        const avg = count > 0 ? (total / count).toFixed(2) : 0; // เต็ม 5
+        dataPoints.push(avg);
+        borderColors.push(cat.color);
+
+        // สร้างป้ายสีอธิบายรายละเอียดด้านล่างกราฟ
+        detailsHTML += `
+            <div style="border-left: 4px solid ${cat.color}; padding-left: 10px; background: #f9f9f9; border-radius: 4px; padding-top: 5px; padding-bottom: 5px;">
+                <strong style="color: ${cat.color}; font-size: 14px;">${catName}: ${avg} / 5</strong>
+                <div style="margin-top: 4px;">${scoreBreakdown || '<span style="color:#aaa; font-size: 12px;">ยังไม่มีคะแนน</span>'}</div>
+            </div>
+        `;
+    });
+
+    document.getElementById('chart-details').innerHTML = detailsHTML;
+
+    // 3. วาดกราฟ Radar
+    const ctx = document.getElementById('radarChart').getContext('2d');
+    if (radarChartInstance) radarChartInstance.destroy(); // ล้างกราฟเก่าทิ้ง
+
+    radarChartInstance = new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'คะแนนเฉลี่ยประเมินทักษะ (เต็ม 5)',
+                data: dataPoints,
+                backgroundColor: 'rgba(54, 162, 235, 0.2)', // สีพื้นหลังกราฟใสๆ
+                borderColor: 'rgba(54, 162, 235, 1)',
+                pointBackgroundColor: borderColors, // จุดสีตามกลุ่มที่จัดไว้
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: borderColors,
+                borderWidth: 2,
+                pointRadius: 5
+            }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            scales: {
+                r: {
+                    angleLines: { display: true },
+                    suggestedMin: 0,
+                    suggestedMax: 5,
+                    ticks: { stepSize: 1, backdropColor: 'transparent' }
+                }
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    document.getElementById('chart-modal').classList.remove('hidden');
+};
+
+// ปิด Modal
+const closeChartBtn = document.getElementById('close-chart-btn');
+const chartModal = document.getElementById('chart-modal');
+if(closeChartBtn && chartModal) {
+    closeChartBtn.addEventListener('click', () => chartModal.classList.add('hidden'));
+    chartModal.addEventListener('click', (e) => {
+        if (e.target === chartModal) chartModal.classList.add('hidden');
+    });
+}
 });

@@ -33,6 +33,7 @@
         <hr class="divider">
 
         <div class="controls">
+            <button id="btn-add-walkin" style="background-color: #17a2b8; color: white; border: none; padding: 10px 15px; border-radius: 5px; font-weight: bold; cursor: pointer;">+ เพิ่ม Walk-in</button>
             <input type="text" id="search-box" placeholder="ค้นหาด้วยชื่อ, ชื่อเล่น, คณะ...">
             <select id="filter-slot">
                 <option value="all">ทุกรอบเวลา</option>
@@ -76,6 +77,58 @@
             <button class="modal-close-btn">&times;</button>
             <div id="staff-modal-body">
             </div>
+        </div>
+    </div>
+    <div id="walkin-modal" class="modal-backdrop hidden">
+        <div class="modal-content" style="max-width: 500px;">
+            <button class="modal-close-btn" id="close-walkin-btn">&times;</button>
+            <h2 style="margin-top: 0; color: #17a2b8;">เพิ่มผู้สมัคร Walk-in</h2>
+            <form id="walkin-form">
+                <div class="form-group"><label>คำนำหน้า:</label> <input type="text" id="wi-prefix" placeholder="นาย/นางสาว"></div>
+                <div class="form-group"><label>ชื่อจริง:</label> <input type="text" id="wi-firstname" required></div>
+                <div class="form-group"><label>นามสกุล:</label> <input type="text" id="wi-lastname" required></div>
+                <div class="form-group"><label>ชื่อเล่น:</label> <input type="text" id="wi-nickname" required></div>
+                <div class="form-group"><label>คณะ:</label> <input type="text" id="wi-faculty" required></div>
+                <div class="form-group"><label>ชั้นปี:</label> <input type="text" id="wi-year" placeholder="เช่น ป.ตรี ปี 1" required></div>
+                <div class="form-group"><label>เบอร์โทร:</label> <input type="text" id="wi-phone"></div>
+                <div class="form-group"><label>ลิงก์ใบสมัคร:</label> <input type="url" id="wi-app-url" placeholder="ลิงก์ Google Drive (ถ้ามี)"></div>
+                <div class="form-group"><label>Line ID:</label> <input type="text" id="wi-line" placeholder="ไอดีไลน์"></div>
+                <div class="form-group" style="align-items: flex-start;">
+                    <label style="padding-top: 8px;">เพิ่มเติม:</label> 
+                    <textarea id="wi-note" rows="2" placeholder="โน้ตเพิ่มเติม (หรือจะใส่ IG)" style="flex: 1; padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; font-family: inherit; resize: vertical;"></textarea>
+                </div>
+                <hr style="border-top: 1px dashed #ccc; margin: 15px 0;">
+                
+                <div class="form-group"><label>วันสัมภาษณ์:</label> 
+                    <select id="wi-date">
+                        <option value="วันที่ 26 มีนาคม">วันที่ 26 มีนาคม</option>
+                        <option value="วันที่ 27 มีนาคม">วันที่ 27 มีนาคม</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>เวลา:</label> 
+                    <select id="wi-time">
+                        <option value="16.40 - 17.00 น.">16.40 - 17.00 น.</option>
+                        <option value="17.05 - 17.25 น.">17.05 - 17.25 น.</option>
+                        <option value="17.30 - 17.50 น.">17.30 - 17.50 น.</option>
+                        <option value="17.55 - 18.15 น.">17.55 - 18.15 น.</option>
+                        <option value="18.20 - 18.40 น.">18.20 - 18.40 น.</option>
+                        <option value="18.45 - 19.05 น.">18.45 - 19.05 น.</option>
+                        <option value="18.55 - 19.15 น.">18.55 - 19.15 น.</option>
+                        <option value="19.20 - 19.40 น.">19.20 - 19.40 น.</option>
+                        <option value="19.45 - 20.05 น.">19.45 - 20.05 น.</option>
+                        <option value="20.10 - 20.30 น.">20.10 - 20.30 น.</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>โต๊ะ:</label> 
+                    <select id="wi-table">
+                        <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                        <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+                        <option value="7">7</option><option value="8">8</option><option value="9">9</option>
+                    </select>
+                </div>
+                
+                <button type="submit" style="width: 100%; background-color: #28a745; color: white; border: none; padding: 12px; border-radius: 5px; cursor: pointer; margin-top: 15px; font-weight: bold; font-size: 16px;">บันทึกข้อมูล Walk-in</button>
+            </form>
         </div>
     </div>
 

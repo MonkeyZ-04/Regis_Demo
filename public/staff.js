@@ -108,9 +108,15 @@ const renderTimeslotDashboard = () => {
             // เงื่อนไขพิเศษสำหรับโต๊ะ 9
             let showCell = true;
             if (tableNum === 9) {
-                const validTimesForTable9 = ['17:55', '18:20', '18:45'];
-                if (selectedDate !== 'วันที่ 27 มีนาคม' || !validTimesForTable9.includes(time)) {
+                // if (selectedDate !== 'วันที่ 27 มีนาคม' || !validTimesForTable9.includes(time)) {
+                if (selectedDate !== 'วันที่ 27 มีนาคม') {
                     showCell = false; // นอกช่วงเวลาให้ปิดทึบ
+                }
+            }
+            if (tableNum === 8) {
+                const blockedTimesForTable8 = ['17:30','17:55', '18:20', '18:45'];
+                if (selectedDate === 'วันที่ 27 มีนาคม' && !blockedTimesForTable8.includes(time)) {
+                    showCell = false; 
                 }
             }
 
@@ -490,3 +496,89 @@ Database.onDataChange(newData => {
     renderCheckinBoard();
     renderTimeslotDashboard();
 });
+
+// ================================================
+// [ Walk-in Feature ]
+// ================================================
+const btnAddWalkin = document.getElementById('btn-add-walkin');
+const walkinModal = document.getElementById('walkin-modal');
+const closeWalkinBtn = document.getElementById('close-walkin-btn');
+const walkinForm = document.getElementById('walkin-form');
+
+if (btnAddWalkin && walkinModal) {
+    // เปิด Modal
+    btnAddWalkin.addEventListener('click', () => {
+        walkinModal.classList.remove('hidden');
+    });
+
+    // ปิด Modal
+    closeWalkinBtn.addEventListener('click', () => {
+        walkinModal.classList.add('hidden');
+    });
+
+    // ปิด Modal เมื่อคลิกพื้นที่ว่าง
+    walkinModal.addEventListener('click', (e) => {
+        if (e.target === walkinModal) {
+            walkinModal.classList.add('hidden');
+        }
+    });
+
+    // Submit ฟอร์ม Walk-in
+    walkinForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        // 1. หาค่า ID ถัดไป (Max ID + 1)
+        let newId = 1;
+        if (allData && allData.length > 0) {
+            newId = Math.max(...allData.map(a => a.id || 0)) + 1;
+        }
+
+        // 2. ดึงข้อมูลจากฟอร์ม
+        const date = document.getElementById('wi-date').value;
+        const time = document.getElementById('wi-time').value;
+        const interviewSlot = `${date} ${time}`;
+        const appUrl = document.getElementById('wi-app-url').value.trim();
+        const lineId = document.getElementById('wi-line').value.trim();
+        const extraNote = document.getElementById('wi-note').value.trim();
+
+        const newApplicant = {
+            id: newId,
+            timestamp: new Date().toLocaleString(),
+            prefix: document.getElementById('wi-prefix').value.trim(),
+            firstName: document.getElementById('wi-firstname').value.trim(),
+            lastName: document.getElementById('wi-lastname').value.trim(),
+            nickname: document.getElementById('wi-nickname').value.trim(),
+            faculty: document.getElementById('wi-faculty').value.trim(),
+            year: document.getElementById('wi-year').value.trim(),
+            phone: document.getElementById('wi-phone').value.trim(),
+            interviewSlot: interviewSlot,
+            table: parseInt(document.getElementById('wi-table').value, 10),
+            applicationUrl: appUrl || '',
+            // ตั้งสถานะเริ่มต้น (Walk-in มาถึงแล้ว เลยให้เป็น Pending รอเช็คอิน หรือจะตั้งเป็น Arrived เลยก็ได้)
+            contactLine: lineId || '',
+            status: 'Pending', 
+            isCalled: false,
+            isForfeited: false,
+            Online: false,
+            interviewScores: {},
+            interviewDetails: {},
+            // 👇 บันทึก Note ไปใส่ไว้ในช่อง "โน้ตเพิ่มเติม" ของหน้าสัมภาษณ์
+            interviewDetails: {
+                general: extraNote ? `[ข้อมูลจากหน้าจุดลงทะเบียน] ${extraNote}` : ''
+            },
+            isWalkin: true // แนบ Flag ว่าเป็นเด็ก Walk-in
+        };
+
+        // 3. ส่งข้อมูลขึ้น Firebase
+        firebase.database().ref(`${Database.config.DB_PATH}/${newId}`).set(newApplicant)
+            .then(() => {
+                alert('เพิ่มผู้สมัคร Walk-in สำเร็จ!');
+                walkinForm.reset();
+                walkinModal.classList.add('hidden');
+                // ระบบ onDataChange จะทำงานอัตโนมัติและดึงข้อมูลใหม่มาโชว์ที่บอร์ดทันที
+            })
+            .catch(err => {
+                alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล: ' + err.message);
+            });
+    });
+}

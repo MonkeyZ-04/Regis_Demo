@@ -5,6 +5,8 @@
     <title>Admin Dashboard</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="container">
@@ -46,7 +48,19 @@
         </div>
 
     </div>
-
+    <div id="chart-modal" class="modal-backdrop hidden">
+        <div class="modal-content" style="max-width: 650px; text-align: center;">
+            <button class="modal-close-btn" id="close-chart-btn">&times;</button>
+            <h2 id="chart-applicant-name" style="margin-top: 0; color: #17a2b8;">วิเคราะห์คะแนนผู้สมัคร</h2>
+            
+            <div style="position: relative; height: 400px; width: 100%; display: flex; justify-content: center;">
+                <canvas id="radarChart"></canvas>
+            </div>
+            
+            <div id="chart-details" style="margin-top: 20px; text-align: left; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                </div>
+        </div>
+    </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>

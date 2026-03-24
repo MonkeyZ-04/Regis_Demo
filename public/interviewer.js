@@ -20,6 +20,18 @@ document.addEventListener('DOMContentLoaded', () => {
     let linkedApplicantId = null; 
     let initialApplicantShown = false; 
 
+    // 👇 เพิ่มโค้ดส่วนนี้ 👇
+    let interviewerName = sessionStorage.getItem('interviewerName');
+    let presenceListenerRef = null;
+    let currentPresenceRef = null;
+    let realtimeDataListenerRef = null;
+
+    if (!interviewerName) {
+        interviewerName = prompt("กรุณากรอกชื่อของคุณ (เพื่อให้ระบบรู้ว่าใครกำลังให้คะแนนอยู่):") || "ไม่ระบุชื่อ";
+        sessionStorage.setItem('interviewerName', interviewerName);
+    }
+    // 👆 จบส่วนที่เพิ่ม 👆
+
     // --- ⭐️ Auto-save Helper: Debounce ---
     const debounce = (func, delay) => {
         let timeoutId;
@@ -154,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
             interviewDateFilter.appendChild(option);
         });
 
-        const preferredDefault = "วันที่ 26 มีนาคม";
+        const preferredDefault = "วันที่่ 26 มีนาคม";
         if (dates.includes(preferredDefault)) {
             interviewDateFilter.value = preferredDefault; 
         } else if (currentVal && dates.includes(currentVal)) {
@@ -377,6 +389,82 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
             `;
+
+            if (typeof presenceListenerRef !== 'undefined' && presenceListenerRef) presenceListenerRef.off(); // ล้างตัวฟังเก่า
+            
+            // ต้องมั่นใจว่ามีตัวแปร interviewerName ถูกประกาศไว้ด้านบนๆ ของไฟล์แล้ว
+            presenceListenerRef = firebase.database().ref(`presence/${applicant.id}`);
+            
+            presenceListenerRef.on('value', (snapshot) => {
+                // ล้างป้ายเตือนเก่าทั้งหมดก่อนอัปเดตใหม่
+                document.querySelectorAll('.presence-indicator').forEach(el => el.remove());
+                document.querySelectorAll('.is-being-edited').forEach(el => el.classList.remove('is-being-edited'));
+                
+                if (snapshot.exists()) {
+                    const presenceData = snapshot.val();
+                    for (const [fieldId, name] of Object.entries(presenceData)) {
+                        // ถ้าคนพิมพ์ ไม่ใช่ตัวเราเอง ให้แสดงป้ายแจ้งเตือน
+                        if (name !== interviewerName) {
+                            const fieldEl = document.getElementById(fieldId);
+                            if (fieldEl) {
+                                fieldEl.classList.add('is-being-edited');
+                                const badge = document.createElement('span');
+                                badge.className = 'presence-indicator';
+                                badge.textContent = `✍️ ${name} กำลังพิมพ์...`;
+                                
+                                // จัดตำแหน่งป้ายให้อยู่บนมุมขวาของช่อง
+                                fieldEl.parentElement.style.position = 'relative';
+                                fieldEl.parentElement.appendChild(badge);
+                            }
+                        }
+                    }
+                }
+            });
+
+            if (typeof realtimeDataListenerRef !== 'undefined' && realtimeDataListenerRef) {
+                realtimeDataListenerRef.off(); // ล้างตัวฟังเก่าเมื่อเปลี่ยนไปดูคนอื่น
+            }
+            
+            realtimeDataListenerRef = firebase.database().ref(`${Database.config.DB_PATH}/${applicant.id}`);
+            
+            realtimeDataListenerRef.on('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    const freshData = snapshot.val();
+                    const freshScores = freshData.interviewScores || {};
+                    const freshDetails = freshData.interviewDetails || {};
+                    
+                    // 1. อัปเดตช่องคะแนน (Dropdown)
+                    for (const [qId, scoreValue] of Object.entries(freshScores)) {
+                        const selectEl = document.getElementById(`score-${qId}`);
+                        // อัปเดตเฉพาะช่องที่มีอยู่ในจอ และ "ตัวเราไม่ได้กำลังคลิกใช้งานอยู่"
+                        if (selectEl && document.activeElement !== selectEl) {
+                            if (selectEl.value !== String(scoreValue)) {
+                                selectEl.value = scoreValue;
+                                // บังคับให้เปลี่ยนสีตามคะแนนใหม่
+                                const event = new Event('change', { bubbles: true });
+                                selectEl.dispatchEvent(event);
+                            }
+                        }
+                    }
+
+                    // 2. อัปเดตช่อง Textarea (พิมพ์ข้อความ)
+                    for (const [qId, textValue] of Object.entries(freshDetails)) {
+                        const textareaEl = document.getElementById(`detail-${qId}`);
+                        // อัปเดตเฉพาะช่องที่มีอยู่ในจอ และ "ตัวเราไม่ได้กำลังพิมพ์อยู่"
+                        if (textareaEl && document.activeElement !== textareaEl) {
+                            if (textareaEl.value !== textValue) {
+                                textareaEl.value = textValue;
+                                // ไฮไลท์สีเขียวแว๊บๆ ให้รู้ว่าข้อมูลเพิ่งถูกอัปเดตจากคนอื่น
+                                textareaEl.style.transition = "background-color 0.3s";
+                                textareaEl.style.backgroundColor = "#e8f5e9"; // สีเขียวอ่อน
+                                setTimeout(() => {
+                                    textareaEl.style.backgroundColor = ""; // คืนสีเดิม
+                                }, 1000);
+                            }
+                        }
+                    }
+                }
+            });
         }
     };
 
@@ -536,6 +624,32 @@ document.addEventListener('DOMContentLoaded', () => {
                     const applicantId = parseInt(form.dataset.id, 10);
                     showSaveStatus('กำลังพิมพ์...', 'typing'); // แสดงสถานะว่ากำลังพิมพ์
                     debouncedSave(applicantId); // เรียกใช้ฟังก์ชันที่หน่วงเวลาไว้
+                }
+            }
+        });
+
+        // 👇 3. เพิ่ม Detect Focus (ใครกำลังพิมพ์อยู่) ตรงนี้เลยครับ 👇
+        scoringViewBody.addEventListener('focusin', (e) => {
+            if (e.target.classList.contains('detail-textarea') || e.target.classList.contains('score-select')) {
+                const form = document.getElementById('scoring-form');
+                if (!form) return;
+                const applicantId = form.dataset.id;
+                const fieldId = e.target.id;
+                
+                // ส่งชื่อเราไปแปะที่ Firebase
+                currentPresenceRef = firebase.database().ref(`presence/${applicantId}/${fieldId}`);
+                currentPresenceRef.onDisconnect().remove(); // ถ้าเน็ตหลุด ให้ลบชื่อออกอัตโนมัติ
+                currentPresenceRef.set(interviewerName);
+            }
+        });
+
+        scoringViewBody.addEventListener('focusout', (e) => {
+            if (e.target.classList.contains('detail-textarea') || e.target.classList.contains('score-select')) {
+                // ลบชื่อเราออกเมื่อคลิกไปที่อื่น
+                if (currentPresenceRef) {
+                    currentPresenceRef.remove();
+                    currentPresenceRef.onDisconnect().cancel();
+                    currentPresenceRef = null;
                 }
             }
         });

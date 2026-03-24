@@ -781,3 +781,55 @@ kanban-header { /* Style header เดิม (ไม่มี dropdown แล้
     /* object-fit: cover; */ /* หรือใช้ cover ถ้าต้องการให้เต็มกรอบแล้วตัดส่วน */
     display: block;
 }
+/* === Walk-in Form Styles === */
+.form-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+.form-group label {
+    width: 100px;
+    font-weight: bold;
+    font-size: 14px;
+    color: #333;
+}
+.form-group input, .form-group select {
+    flex: 1;
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+}
+.form-group input:focus, .form-group select:focus {
+    outline: none;
+    border-color: #17a2b8;
+}
+/* === Real-time Presence (Google Sheets Style) === */
+.is-being-edited {
+    border: 2px solid #ff9800 !important;
+    background-color: #fffaf0 !important;
+    box-shadow: 0 0 5px rgba(255, 152, 0, 0.5);
+    transition: all 0.2s ease;
+}
+
+.presence-indicator {
+    position: absolute;
+    right: 5px;
+    top: -22px;
+    background-color: #ff9800;
+    color: white;
+    padding: 3px 8px;
+    font-size: 11px;
+    border-radius: 4px;
+    z-index: 100;
+    font-weight: bold;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    pointer-events: none; /* ทำให้คลิกทะลุป้ายชื่อได้ */
+    animation: popIn 0.2s ease-out;
+    white-space: nowrap;
+}
+
+@keyframes popIn {
+    from { opacity: 0; transform: translateY(5px) scale(0.9); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
