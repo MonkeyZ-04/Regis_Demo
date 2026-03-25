@@ -41,7 +41,7 @@ QUESTIONS: [
             id: 'q2a', 
             label: '2a', 
             type: 'score_text', 
-            weight: 1, 
+            weight: 0.25, 
             maxScore: 5,
             text: 'โดยปกติแล้วเรามีวิธีรับมือกับงานที่ยากและสำคัญยังไง เช่นอาจไม่มั่นใจว่าตัวเองจะสามารถทำได้มั้ย' 
         },
@@ -49,7 +49,7 @@ QUESTIONS: [
             id: 'q2b', 
             label: '2b', 
             type: 'score_text', 
-            weight: 1, 
+            weight: 0.25, 
             maxScore: 5,
             isSubQuestion: true,
             text: 'แล้วถ้าเป็นงานที่เราไม่คุ้นเคยหรือไม่เคยทำ มาแบบฉับพลันจะรับมือยังไง?' 
@@ -64,7 +64,7 @@ QUESTIONS: [
             id: 'q4a', 
             label: '4a', 
             type: 'score_text', 
-            weight: 1, 
+            weight: 3.5, 
             maxScore: 5,
             text: 'ถ้าทำงานกลุ่มกับเพื่อนแล้วเพื่อนทำส่วนที่รับผิดชอบไม่ทัน > คิดว่าเป็นเพราะอะไรได้บ้าง?' 
         },
@@ -72,7 +72,7 @@ QUESTIONS: [
             id: 'q4b', 
             label: '4b', 
             type: 'score_text', 
-            weight: 1, 
+            weight: 1.5, 
             maxScore: 5,
             isSubQuestion: true,
             text: 'ถ้าเป็นเราในตอนนี้จะมีวิธีจัดการยังไง?' 
@@ -89,7 +89,7 @@ QUESTIONS: [
             id: 'q5b', 
             label: '5b', 
             type: 'score_text', 
-            weight: 1, 
+            weight: 2, 
             maxScore: 5,
             isSubQuestion: true,
             text: 'เล่าให้ฟังถึงมุมมองของเราต่อกลุ่มชาติพันธุ์หน่อย' 
@@ -98,7 +98,7 @@ QUESTIONS: [
             id: 'q6', 
             label: '6', 
             type: 'score_text', 
-            weight: 1, 
+            weight: 3.25, 
             maxScore: 5,
             text: 'คาดหวังอะไรกับการได้ไปทำกิจกรรมอาสากับค่ายเรา' 
         },
@@ -106,7 +106,7 @@ QUESTIONS: [
             id: 'q7a', 
             label: '7a', 
             type: 'score_text', 
-            weight: 1, 
+            weight: 0.5, 
             maxScore: 5,
             text: 'นอกจากค่ายอาสาของชมรมแล้ว เราคิดว่าชมรมสามารถช่วยเหลือชาวเขาในรูปแบบอื่น ๆ ได้ยังไงบ้าง ลองเสนอไอเดีย' 
         },
@@ -123,7 +123,7 @@ QUESTIONS: [
             id: 'q8a', 
             label: '8a', 
             type: 'score_text', 
-            weight: 1, 
+            weight: 0.25, 
             maxScore: 5,
             text: 'รู้จักชมรมของเรามาก่อนมั้ย > รู้จักแค่ไหน > ชอบอะไรในชมรมเรา?' 
         },
@@ -131,7 +131,7 @@ QUESTIONS: [
             id: 'q8b', 
             label: '8b', 
             type: 'score_text', 
-            weight: 1, 
+            weight: 0.5, 
             maxScore: 5,
             isSubQuestion: true,
             text: 'คิดว่าทำไมถึงต้องเป็นค่ายนี้?' 
@@ -191,7 +191,7 @@ QUESTIONS: [
             id: 'q14', 
             label: '14', 
             type: 'score_text', 
-            weight: 1, 
+            weight: 2, 
             maxScore: 5,
             text: 'กฎค่าย 9 ข้อ คิดเห็นยังไงกับกฎค่าย มีข้อไหนที่ควรปรับแก้หรือยืดหยุ่นได้มั้ย?', 
             choices: [
