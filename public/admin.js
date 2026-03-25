@@ -27,21 +27,51 @@ document.addEventListener('DOMContentLoaded', () => {
     const SCORE_WEIGHTS = Database.config.getScoreWeights();
 
     // ⭐️ Calculate Total Score (with rounding down .5) ⭐️
+// ⭐️ Calculate Total Score (with Custom Algorithm) ⭐️
     const calculateTotalScore = (scores) => {
         if (!scores || typeof scores !== 'object') return 0; 
-        let total = 0;
+        
+        let baseScore = 0;        // คะแนนรวมสัมภาษณ์ (ไม่รวมใบสมัคร)
+        let appScoreTotal = 0;    // คะแนนใบสมัคร (คูณน้ำหนักแล้ว)
+        let assessClubScore = -1; // คะแนน Club Fit (ความเข้ากันได้)
         
         SCORE_KEYS.forEach(key => {
             const numericScore = parseFloat(scores[key]); 
             const weight = SCORE_WEIGHTS[key] || 0; 
 
             if (!isNaN(numericScore) && numericScore >= 0) {
-                // ⭐️ ปัดเศษ .5 ทิ้งก่อนคูณน้ำหนัก (ตาม Requirement)
+                // ปัดเศษ .5 ทิ้งก่อนคูณน้ำหนัก (ตาม Requirement เดิม)
                 const scoreToCalc = Math.floor(numericScore);
-                total += (scoreToCalc * weight);
+                
+                if (key === 'application') {
+                    // แยกเก็บคะแนนใบสมัคร
+                    appScoreTotal = (scoreToCalc * weight);
+                } else if (key === 'assess_club') {
+                    // แยกเก็บคะแนน Club Fit (เอาไว้คิดตัวคูณ)
+                    assessClubScore = scoreToCalc;
+                } else {
+                    // ข้ออื่นๆ เอามาคูณน้ำหนักแล้วบวกรวมกันเป็น Base Score
+                    baseScore += (scoreToCalc * weight);
+                }
             }
         });
         
+        // 1. ตรวจสอบคะแนน Compatibility (assess_club) เพื่อหาตัวคูณ
+        let multiplier = 1; // ค่าเริ่มต้น (ถ้ายังไม่ได้ให้คะแนนข้อนี้ จะคูณ 1 ปกติ)
+        if (assessClubScore === 0) multiplier = 0;
+        else if (assessClubScore === 1) multiplier = 0.875;
+        else if (assessClubScore === 2) multiplier = 0.9375;
+        else if (assessClubScore === 3) multiplier = 1;
+        else if (assessClubScore === 4) multiplier = 1.0625;
+        else if (assessClubScore === 5) multiplier = 1.125;
+
+        // 2. นำคะแนนรวมที่ไม่รวมใบสมัคร ไปคูณกับตัวคูณที่ได้
+        let adjustedBaseScore = baseScore * multiplier;
+
+        // 3. เอาผลลัพธ์จากข้อ 2 มาบวกกับคะแนนใบสมัคร
+        let total = adjustedBaseScore + appScoreTotal;
+        
+        // คืนค่าเป็นทศนิยม 2 ตำแหน่ง
         return Math.round(total * 100) / 100;
     };
 

@@ -26,7 +26,7 @@ QUESTIONS: [
             id: 'application', 
             label: 'ใบสมัคร', 
             type: 'score_text', 
-            weight: 1.5, 
+            weight: 1, 
             maxScore: 10,
             text: 'คะแนนใบสมัคร' 
         },
