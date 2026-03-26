@@ -579,40 +579,82 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // Handle Image Upload (Existing Logic) - No changes needed here, handled separately
+            // Handle Image Upload (รองรับ iPhone HEIC/TIFF และลดขนาดไฟล์)
             if (e.target.id === 'applicant-image-upload') {
-                 // ... existing image upload logic ...
                  const file = e.target.files[0]; 
                  const applicantId = parseInt(e.target.dataset.id, 10);
                  if (!file || !applicantId) return; 
+
                  const previewContainer = scoringViewBody.querySelector('#image-preview-container');
                  const progressBar = scoringViewBody.querySelector('#upload-progress');
-                 const fileName = `${new Date().getTime()}_${file.name}`;
-                 const storageRef = Database.storage.ref(`applicant_images/${applicantId}/${fileName}`);
-                 const uploadTask = storageRef.put(file);
- 
+                 
                  progressBar.style.display = 'block';
-                 previewContainer.innerHTML = `<p>กำลังอัปโหลด... 0%</p>`;
- 
-                 uploadTask.on('state_changed',
-                     (snapshot) => {
-                         const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                         progressBar.value = progress;
-                         previewContainer.innerHTML = `<p>กำลังอัปโหลด... ${Math.round(progress)}%</p>`;
-                     },
-                     (error) => {
-                         alert('เกิดข้อผิดพลาดในการอัปโหลดรูปภาพ: ' + error.message);
+                 previewContainer.innerHTML = `<p>กำลังเตรียมไฟล์...</p>`;
+
+                 // สร้างฟังก์ชันแบบ Async เพื่อจัดการรูปภาพ
+                 const processAndUploadImage = async () => {
+                     try {
+                         let imageFileToUpload = file;
+                         const fileExt = file.name.split('.').pop().toLowerCase();
+                         const fileType = file.type.toLowerCase();
+
+                         // 1. ถ้าเป็นไฟล์ของ iPhone (HEIC, HEIF, TIFF) ให้แปลงเป็น JPEG ก่อน
+                         if (fileExt === 'heic' || fileExt === 'heif' || fileExt === 'tiff' || fileExt === 'tif' || fileType.includes('heic') || fileType.includes('tiff')) {
+                             previewContainer.innerHTML = `<p>กำลังแปลงไฟล์จาก iPhone...</p>`;
+                             // ใช้ heic2any แปลงไฟล์
+                             const convertedBlob = await heic2any({
+                                 blob: file,
+                                 toType: "image/jpeg",
+                                 quality: 0.8
+                             });
+                             // สร้างเป็น File object ใหม่ที่เป็น .jpg
+                             const blobArray = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+                             imageFileToUpload = new File([blobArray], `converted_${applicantId}.jpg`, { type: "image/jpeg" });
+                         }
+
+                         // 2. บีบอัดและลดขนาดรูปภาพ (Compress & Resize)
+                         previewContainer.innerHTML = `<p>กำลังบีบอัดรูปภาพ...</p>`;
+                         const compressionOptions = {
+                             maxSizeMB: 1,           // ให้ไฟล์ใหญ่สุดไม่เกิน 1 MB
+                             maxWidthOrHeight: 1024, // ย่อความกว้าง/สูง ไม่ให้เกิน 1024px
+                             useWebWorker: true
+                         };
+                         const compressedFile = await imageCompression(imageFileToUpload, compressionOptions);
+
+                         // 3. อัปโหลดขึ้น Firebase
+                         const fileName = `${new Date().getTime()}_${compressedFile.name}`;
+                         const storageRef = Database.storage.ref(`applicant_images/${applicantId}/${fileName}`);
+                         const uploadTask = storageRef.put(compressedFile);
+         
+                         uploadTask.on('state_changed',
+                             (snapshot) => {
+                                 const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                                 progressBar.value = progress;
+                                 previewContainer.innerHTML = `<p>กำลังอัปโหลด... ${Math.round(progress)}%</p>`;
+                             },
+                             (error) => {
+                                 alert('เกิดข้อผิดพลาดในการอัปโหลดรูปภาพ: ' + error.message);
+                                 progressBar.style.display = 'none';
+                             },
+                             () => {
+                                 progressBar.style.display = 'none';
+                                 previewContainer.innerHTML = `<p>อัปโหลดสำเร็จ! กำลังบันทึก...</p>`;
+                                 uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
+                                     Database.updateApplicant(applicantId, { applicantImage: downloadURL });
+                                     previewContainer.innerHTML = `<img src="${downloadURL}" alt="Applicant Photo">`;
+                                 });
+                             }
+                         );
+                     } catch (error) {
+                         console.error("Image processing error:", error);
+                         alert("เกิดข้อผิดพลาดในการประมวลผลรูปภาพ: " + error.message);
                          progressBar.style.display = 'none';
-                     },
-                     () => {
-                         progressBar.style.display = 'none';
-                         previewContainer.innerHTML = `<p>อัปโหลดสำเร็จ! กำลังบันทึก...</p>`;
-                         uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
-                             Database.updateApplicant(applicantId, { applicantImage: downloadURL });
-                             previewContainer.innerHTML = `<img src="${downloadURL}" alt="Applicant Photo">`;
-                         });
+                         previewContainer.innerHTML = `<p style="color:red;">การอัปโหลดล้มเหลว</p>`;
                      }
-                 );
+                 };
+
+                 // เรียกใช้งานฟังก์ชัน
+                 processAndUploadImage();
             }
         });
 
