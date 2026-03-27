@@ -2,20 +2,15 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     const adminOverview = document.getElementById('admin-overview');
-    const canvasElement = document.getElementById('score-chart');
     const rankedListContainer = document.getElementById('ranked-list-container');
     const tableFilter = document.getElementById('table-filter');
 
-    let scoreChartCtx;
-    let chartInstance;
     let allData = [];
 
-    if (!adminOverview || !canvasElement || !rankedListContainer || !tableFilter) {
+    // เช็คแค่ element ที่มีอยู่จริง
+    if (!adminOverview || !rankedListContainer || !tableFilter) {
         return; 
     }
-    
-    scoreChartCtx = canvasElement.getContext('2d');
-    if (!scoreChartCtx) return; 
 
     if (typeof Database === 'undefined' || !Database.config) {
         alert("ไม่พบการตั้งค่าระบบ กรุณาตรวจสอบไฟล์ data.js");
@@ -26,38 +21,32 @@ document.addEventListener('DOMContentLoaded', () => {
     const SCORE_LABELS = Database.config.getScoreLabels();
     const SCORE_WEIGHTS = Database.config.getScoreWeights();
 
-    // ⭐️ Calculate Total Score (with rounding down .5) ⭐️
-// ⭐️ Calculate Total Score (with Custom Algorithm) ⭐️
+    // ⭐️ Calculate Total Score (with Custom Algorithm) ⭐️
     const calculateTotalScore = (scores) => {
         if (!scores || typeof scores !== 'object') return 0; 
         
-        let baseScore = 0;        // คะแนนรวมสัมภาษณ์ (ไม่รวมใบสมัคร)
-        let appScoreTotal = 0;    // คะแนนใบสมัคร (คูณน้ำหนักแล้ว)
-        let assessClubScore = -1; // คะแนน Club Fit (ความเข้ากันได้)
+        let baseScore = 0;        
+        let appScoreTotal = 0;    
+        let assessClubScore = -1; 
         
         SCORE_KEYS.forEach(key => {
             const numericScore = parseFloat(scores[key]); 
             const weight = SCORE_WEIGHTS[key] || 0; 
 
             if (!isNaN(numericScore) && numericScore >= 0) {
-                // ปัดเศษ .5 ทิ้งก่อนคูณน้ำหนัก (ตาม Requirement เดิม)
                 const scoreToCalc = Math.floor(numericScore);
                 
                 if (key === 'application') {
-                    // แยกเก็บคะแนนใบสมัคร
                     appScoreTotal = (scoreToCalc * weight);
                 } else if (key === 'assess_club') {
-                    // แยกเก็บคะแนน Club Fit (เอาไว้คิดตัวคูณ)
                     assessClubScore = scoreToCalc;
                 } else {
-                    // ข้ออื่นๆ เอามาคูณน้ำหนักแล้วบวกรวมกันเป็น Base Score
                     baseScore += (scoreToCalc * weight);
                 }
             }
         });
         
-        // 1. ตรวจสอบคะแนน Compatibility (assess_club) เพื่อหาตัวคูณ
-        let multiplier = 1; // ค่าเริ่มต้น (ถ้ายังไม่ได้ให้คะแนนข้อนี้ จะคูณ 1 ปกติ)
+        let multiplier = 1; 
         if (assessClubScore === 0) multiplier = 0;
         else if (assessClubScore === 1) multiplier = 0.875;
         else if (assessClubScore === 2) multiplier = 0.9375;
@@ -65,13 +54,8 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (assessClubScore === 4) multiplier = 1.0625;
         else if (assessClubScore === 5) multiplier = 1.125;
 
-        // 2. นำคะแนนรวมที่ไม่รวมใบสมัคร ไปคูณกับตัวคูณที่ได้
         let adjustedBaseScore = baseScore * multiplier;
-
-        // 3. เอาผลลัพธ์จากข้อ 2 มาบวกกับคะแนนใบสมัคร
         let total = adjustedBaseScore + appScoreTotal;
-        
-        // คืนค่าเป็นทศนิยม 2 ตำแหน่ง
         return Math.round(total * 100) / 100;
     };
 
@@ -110,6 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (app.status === 'Pending' && app.isCalled) { cardClasses.push('called'); }
                 return `<div class="${cardClasses.join(' ')}">${app.nickname} <span class="status ${app.status ? app.status.toLowerCase() : 'pending'}">${app.status ? app.status.charAt(0) : 'P'}</span></div>`;
             }).join('');
+            
             const forfeitedItems = allData.filter(app => app.isForfeited && app.table == tableNumber);
             if (forfeitedItems.length > 0) {
                  itemsHtml += '<hr style="border-top: 1px dashed #ccc; margin: 10px 0;">'; 
@@ -123,31 +108,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let activeApplicants = allData.filter(app => !app.isForfeited);
         const rankedListApplicants = (selectedTable === 'all') ? activeApplicants : activeApplicants.filter(app => app.table == selectedTable);
-        const sortedForChart = [...activeApplicants].sort((a, b) => calculateTotalScore(b.interviewScores) - calculateTotalScore(a.interviewScores));
-        const chartLabels = sortedForChart.map(app => app.nickname);
-        const chartTotalScores = sortedForChart.map(app => calculateTotalScore(app.interviewScores));
-        
-        if (chartInstance) { chartInstance.destroy(); } 
-        try {
-            chartInstance = new Chart(scoreChartCtx, {
-                 type: 'bar',
-                 data: {
-                     labels: chartLabels,
-                     datasets: [{
-                         label: 'คะแนนรวม (N/A = 0)',
-                         data: chartTotalScores,
-                         backgroundColor: 'rgba(54, 162, 235, 0.6)',
-                         borderColor: 'rgba(54, 162, 235, 1)',
-                         borderWidth: 1
-                    }]
-                 },
-                 options: {
-                     indexAxis: 'y', 
-                     scales: { x: { beginAtZero: true } },
-                     plugins: { legend: { display: false }, title: { display: true, text: 'สรุปคะแนนรวมผู้สมัคร (เรียงจากมากไปน้อย - ไม่รวมผู้สละสิทธิ์)' } }
-                 }
-             });
-        } catch (chartError) {}
 
         rankedListContainer.innerHTML = ''; 
         const applicantsWithScores = rankedListApplicants.map(app => ({
@@ -213,109 +173,267 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-// [ ระบบวิเคราะห์คะแนน Radar Chart ]
-// ==========================================
-let radarChartInstance = null;
+    // [ ระบบวิเคราะห์คะแนน Radar Chart รายบุคคล ]
+    // ==========================================
+    let radarChartInstance = null;
 
-// 1. จัดกลุ่มเกณฑ์การประเมิน (Grouping) แบ่งตามสีและหัวข้อ
-const scoreCategories = {
-    'การรับมือและแก้ปัญหา': { ids: ['q2a', 'q2b'], color: '#ff9f40' },      // สีส้ม
-    'การทำงานเป็นทีม': { ids: ['q4a', 'q4b'], color: '#4bc0c0' },           // สีเขียวมิ้นต์
-    'ความเข้าใจชาติพันธุ์': { ids: ['q5a', 'q5b'], color: '#9966ff' },         // สีม่วง
-    'แรงจูงใจและความตั้งใจ': { ids: ['q6', 'q7a', 'q7b'], color: '#ff6384' }, // สีชมพูแดง
-    'ความเข้ากับชมรม (Club Fit)': { ids: ['q8a', 'q8b', 'assess_club'], color: '#36a2eb' }, // สีฟ้า
-    'กฎระเบียบและการปรับตัว': { ids: ['q14'], color: '#ffcd56' }            // สีเหลือง
-};
+    const scoreCategories = {
+        'การรับมือและแก้ปัญหา': { ids: ['q2a', 'q2b'], color: '#ff9f40' },
+        'การทำงานเป็นทีม': { ids: ['q4a', 'q4b'], color: '#4bc0c0' },
+        'ความเข้าใจชาติพันธุ์': { ids: ['q5a', 'q5b'], color: '#9966ff' },
+        'แรงจูงใจและความตั้งใจ': { ids: ['q6', 'q7a', 'q7b'], color: '#ff6384' },
+        'ความเข้ากับชมรม (Club Fit)': { ids: ['q8a', 'q8b', 'assess_club'], color: '#36a2eb' },
+        'กฎระเบียบและการปรับตัว': { ids: ['q14'], color: '#ffcd56' }
+    };
 
-// 2. ฟังก์ชันเปิดหน้าต่างกราฟ
-window.showApplicantChart = (applicantId) => {
-    const applicant = allData.find(a => a.id === applicantId);
-    if (!applicant) return;
+    window.showApplicantChart = (applicantId) => {
+        const applicant = allData.find(a => a.id === applicantId);
+        if (!applicant) return;
 
-    document.getElementById('chart-applicant-name').innerText = `วิเคราะห์คะแนน: ${applicant.firstName} (${applicant.nickname})`;
-    
-    const scores = applicant.interviewScores || {};
-    const labels = Object.keys(scoreCategories);
-    const dataPoints = [];
-    const borderColors = [];
-    
-    let detailsHTML = '';
-
-    // คำนวณค่าเฉลี่ยแต่ละด้าน
-    labels.forEach(catName => {
-        const cat = scoreCategories[catName];
-        let total = 0, count = 0;
-        let scoreBreakdown = '';
+        document.getElementById('chart-applicant-name').innerText = `วิเคราะห์คะแนน: ${applicant.firstName} (${applicant.nickname})`;
         
-        cat.ids.forEach(qId => {
-            if (scores[qId] !== undefined) {
-                const s = parseFloat(scores[qId]);
-                total += s;
-                count++;
-                scoreBreakdown += `<span style="font-size: 12px; background: #eee; padding: 2px 5px; border-radius: 3px; margin-right: 3px;">${qId}: ${s}</span>`;
+        const scores = applicant.interviewScores || {};
+        const labels = Object.keys(scoreCategories);
+        const dataPoints = [];
+        const borderColors = [];
+        
+        let detailsHTML = '';
+
+        labels.forEach(catName => {
+            const cat = scoreCategories[catName];
+            let total = 0, count = 0;
+            let scoreBreakdown = '';
+            
+            cat.ids.forEach(qId => {
+                if (scores[qId] !== undefined) {
+                    const s = parseFloat(scores[qId]);
+                    if (s >= 0) { // ข้าม N/A (-1)
+                        total += s;
+                        count++;
+                        scoreBreakdown += `<span style="font-size: 12px; background: #eee; padding: 2px 5px; border-radius: 3px; margin-right: 3px;">${qId}: ${s}</span>`;
+                    }
+                }
+            });
+            
+            const avg = count > 0 ? (total / count).toFixed(2) : 0; 
+            dataPoints.push(avg);
+            borderColors.push(cat.color);
+
+            detailsHTML += `
+                <div style="border-left: 4px solid ${cat.color}; padding-left: 10px; background: #f9f9f9; border-radius: 4px; padding-top: 5px; padding-bottom: 5px;">
+                    <strong style="color: ${cat.color}; font-size: 14px;">${catName}: ${avg} / 5</strong>
+                    <div style="margin-top: 4px;">${scoreBreakdown || '<span style="color:#aaa; font-size: 12px;">ยังไม่มีคะแนน</span>'}</div>
+                </div>
+            `;
+        });
+
+        document.getElementById('chart-details').innerHTML = detailsHTML;
+
+        // ⭐️ ต้องลบ class hidden เพื่อแสดง Modal ก่อน ไม่งั้น Chart.js จะวาดกราฟไม่ขึ้น (ขนาด 0x0)
+        document.getElementById('chart-modal').classList.remove('hidden');
+
+        // วาดกราฟ Radar
+        const ctx = document.getElementById('radarChart').getContext('2d');
+        if (radarChartInstance) radarChartInstance.destroy(); 
+
+        radarChartInstance = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'คะแนนเฉลี่ยประเมินทักษะ (เต็ม 5)',
+                    data: dataPoints,
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)', 
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    pointBackgroundColor: borderColors, 
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: borderColors,
+                    borderWidth: 2,
+                    pointRadius: 5
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        angleLines: { display: true },
+                        suggestedMin: 0,
+                        suggestedMax: 5,
+                        ticks: { stepSize: 1, backdropColor: 'transparent' }
+                    }
+                },
+                plugins: { legend: { display: false } }
             }
         });
-        
-        const avg = count > 0 ? (total / count).toFixed(2) : 0; // เต็ม 5
-        dataPoints.push(avg);
-        borderColors.push(cat.color);
+    };
 
-        // สร้างป้ายสีอธิบายรายละเอียดด้านล่างกราฟ
-        detailsHTML += `
-            <div style="border-left: 4px solid ${cat.color}; padding-left: 10px; background: #f9f9f9; border-radius: 4px; padding-top: 5px; padding-bottom: 5px;">
-                <strong style="color: ${cat.color}; font-size: 14px;">${catName}: ${avg} / 5</strong>
-                <div style="margin-top: 4px;">${scoreBreakdown || '<span style="color:#aaa; font-size: 12px;">ยังไม่มีคะแนน</span>'}</div>
-            </div>
-        `;
-    });
+    // ปิด Modal
+    const closeChartBtn = document.getElementById('close-chart-btn');
+    const chartModal = document.getElementById('chart-modal');
+    if(closeChartBtn && chartModal) {
+        closeChartBtn.addEventListener('click', () => chartModal.classList.add('hidden'));
+        chartModal.addEventListener('click', (e) => {
+            if (e.target === chartModal) chartModal.classList.add('hidden');
+        });
+    }
 
-    document.getElementById('chart-details').innerHTML = detailsHTML;
+    // ==========================================
+    // [ ระบบเปรียบเทียบกราฟรายบุคคล (Current vs Winter) ]
+    // ==========================================
+    let winterData = [];
+    let compareRadarChartInstance = null;
 
-    // 3. วาดกราฟ Radar
-    const ctx = document.getElementById('radarChart').getContext('2d');
-    if (radarChartInstance) radarChartInstance.destroy(); // ล้างกราฟเก่าทิ้ง
-
-    radarChartInstance = new Chart(ctx, {
-        type: 'radar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'คะแนนเฉลี่ยประเมินทักษะ (เต็ม 5)',
-                data: dataPoints,
-                backgroundColor: 'rgba(54, 162, 235, 0.2)', // สีพื้นหลังกราฟใสๆ
-                borderColor: 'rgba(54, 162, 235, 1)',
-                pointBackgroundColor: borderColors, // จุดสีตามกลุ่มที่จัดไว้
-                pointBorderColor: '#fff',
-                pointHoverBackgroundColor: '#fff',
-                pointHoverBorderColor: borderColors,
-                borderWidth: 2,
-                pointRadius: 5
-            }]
-        },
-        options: {
-            maintainAspectRatio: false,
-            scales: {
-                r: {
-                    angleLines: { display: true },
-                    suggestedMin: 0,
-                    suggestedMax: 5,
-                    ticks: { stepSize: 1, backdropColor: 'transparent' }
+    // ฟังก์ชันคำนวณคะแนนเฉลี่ย (รองรับข้อแตกต่างของข้อมูล Winter)
+// ฟังก์ชันคำนวณคะแนนเฉลี่ย (เพิ่มตัวแปร isWinter เข้ามาเช็ค)
+    const getRadarDataPoints = (scores, isWinter = false) => {
+        const dataPoints = [];
+        Object.keys(scoreCategories).forEach(catName => {
+            const cat = scoreCategories[catName];
+            let total = 0, count = 0;
+            
+            // ⭐️ ถ้าเป็นข้อมูล Winter และหมวดนี้คือความเข้าใจชาติพันธุ์ ให้ใช้ q5 ตรงๆ
+            if (isWinter && catName === 'ความเข้าใจชาติพันธุ์') {
+                if (scores['q5'] !== undefined) {
+                    const num = parseFloat(scores['q5']);
+                    if (!isNaN(num) && num >= 0) {
+                        total += num;
+                        count++;
+                    }
                 }
-            },
-            plugins: { legend: { display: false } }
+            } else {
+                // สำหรับข้อมูลปัจจุบัน หรือหมวดอื่นๆ ให้ใช้ตาม scoreCategories ปกติ
+                cat.ids.forEach(qId => {
+                    if (scores[qId] !== undefined) {
+                        const num = parseFloat(scores[qId]);
+                        if (!isNaN(num) && num >= 0) { 
+                            total += num;
+                            count++;
+                        }
+                    }
+                });
+            }
+            dataPoints.push(count > 0 ? (total / count).toFixed(2) : 0);
+        });
+        return dataPoints;
+    };
+
+    const populateCurrentDropdown = () => {
+        const select = document.getElementById('compare-current-select');
+        if (!select) return;
+        const currentVal = select.value;
+        select.innerHTML = '<option value="">-- เลือกผู้สมัครปัจจุบัน --</option>';
+        
+        allData.filter(a => !a.isForfeited).forEach(app => {
+            const opt = document.createElement('option');
+            opt.value = app.id;
+            opt.textContent = `${app.firstName} (${app.nickname}) - โต๊ะ ${app.table}`;
+            select.appendChild(opt);
+        });
+        if (currentVal) select.value = currentVal;
+    };
+
+    const populateWinterDropdown = () => {
+        const select = document.getElementById('compare-winter-select');
+        if (!select) return;
+        const currentVal = select.value;
+        select.innerHTML = '<option value="">-- เลือกผู้สมัคร Winter --</option>';
+        
+        winterData.forEach(app => {
+            const opt = document.createElement('option');
+            opt.value = app.id;
+            opt.textContent = `${app.firstName} (${app.nickname}) - ${app.faculty || 'ไม่ระบุคณะ'}`;
+            select.appendChild(opt);
+        });
+        if (currentVal) select.value = currentVal;
+    };
+
+    const updateCompareRadarChart = () => {
+        const currentSelect = document.getElementById('compare-current-select');
+        const winterSelect = document.getElementById('compare-winter-select');
+        if (!currentSelect || !winterSelect) return;
+
+        const currentId = parseInt(currentSelect.value, 10);
+        const winterId = parseInt(winterSelect.value, 10);
+
+        const currentApp = allData.find(a => a.id === currentId);
+        const winterApp = winterData.find(a => a.id === winterId);
+
+        const labels = Object.keys(scoreCategories);
+        const datasets = [];
+
+        if (currentApp) {
+            datasets.push({
+                label: `ปัจจุบัน: ${currentApp.nickname}`,
+                // ส่ง false ไปบอกว่าเป็นข้อมูลปัจจุบัน
+                data: getRadarDataPoints(currentApp.interviewScores || {}, false),
+                backgroundColor: 'rgba(0, 123, 255, 0.2)',
+                borderColor: 'rgba(0, 123, 255, 1)',
+                pointBackgroundColor: 'rgba(0, 123, 255, 1)',
+                borderWidth: 2,
+                pointRadius: 4
+            });
         }
-    });
 
-    document.getElementById('chart-modal').classList.remove('hidden');
-};
+        if (winterApp) {
+            datasets.push({
+                label: `Winter 2025: ${winterApp.nickname}`,
+                // ⭐️ ส่ง true ไปบอกว่าเป็นข้อมูล Winter ให้ไปดึง q5 แทน
+                data: getRadarDataPoints(winterApp.interviewScores || {}, true),
+                backgroundColor: 'rgba(255, 159, 64, 0.2)',
+                borderColor: 'rgba(255, 159, 64, 1)',
+                pointBackgroundColor: 'rgba(255, 159, 64, 1)',
+                borderWidth: 2,
+                pointRadius: 4
+            });
+        }
 
-// ปิด Modal
-const closeChartBtn = document.getElementById('close-chart-btn');
-const chartModal = document.getElementById('chart-modal');
-if(closeChartBtn && chartModal) {
-    closeChartBtn.addEventListener('click', () => chartModal.classList.add('hidden'));
-    chartModal.addEventListener('click', (e) => {
-        if (e.target === chartModal) chartModal.classList.add('hidden');
-    });
-}
+        const ctx = document.getElementById('compareRadarChart').getContext('2d');
+        if (compareRadarChartInstance) compareRadarChartInstance.destroy();
+
+        if (datasets.length === 0) return;
+
+        compareRadarChartInstance = new Chart(ctx, {
+            type: 'radar',
+            data: { labels: labels, datasets: datasets },
+            options: {
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        angleLines: { display: true },
+                        suggestedMin: 0,
+                        suggestedMax: 5,
+                        ticks: { stepSize: 1, backdropColor: 'transparent' }
+                    }
+                },
+                plugins: {
+                    legend: { position: 'top', labels: { font: { family: 'Sarabun', size: 14 } } }
+                }
+            }
+        });
+    };
+
+    const fetchWinterData = async () => {
+        try {
+            const response = await fetch('winter.json');
+            if (!response.ok) throw new Error('Network error');
+            const data = await response.json();
+            winterData = data.applicants.filter(app => app !== null);
+            populateWinterDropdown();
+        } catch (error) {
+            console.error('Error fetching winter.json:', error);
+        }
+    };
+
+    document.getElementById('compare-current-select')?.addEventListener('change', updateCompareRadarChart);
+    document.getElementById('compare-winter-select')?.addEventListener('change', updateCompareRadarChart);
+
+    fetchWinterData();
+
+    const originalRenderAdminView = renderAdminView;
+    renderAdminView = () => {
+        originalRenderAdminView();
+        populateCurrentDropdown();
+        updateCompareRadarChart(); 
+    };
 });
